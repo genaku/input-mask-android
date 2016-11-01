@@ -1,32 +1,15 @@
-apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
-apply plugin: 'kotlin-android'
+apply plugin: 'kotlin'
+apply plugin: 'java'
 
 // This is the library version used when deploying the artifact
-version = "1.0.3"
+version = "1.1"
 
-
-android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.3"
-
-    defaultConfig {
-        minSdkVersion 9
-        targetSdkVersion 23
-        versionCode 1
-        versionName "1.0"
-    }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-    }
+sourceSets {
+    main.java.srcDirs += 'src/main/kotlin'
 }
+
 
 def siteUrl = 'https://github.com/RedMadRobot/input-mask-android'      // Homepage URL of the library
 def gitUrl = 'https://github.com/RedMadRobot/input-mask-android.git'   // Git repository URL
@@ -77,27 +60,15 @@ install {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
-    compile deps.kotlinStdlib
-    
+    compileOnly deps.kotlinStdlib
+    compileOnly 'com.google.android:android:1.5_r3'
+
     testCompile testDeps.jUnit
 }
-
-task sourcesJar(type: Jar) {
-    from android.sourceSets.main.java.srcDirs
+// custom tasks for creating source/javadoc jars
+task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
-}
-
-task javadoc(type: Javadoc) {
-    android.libraryVariants.all { variant ->
-        task("generate${variant.name.capitalize()}Javadoc", type: Javadoc) {
-            description "Generates Javadoc for $variant.name."
-            source = variant.javaCompile.source
-            ext.androidJar = "${android.sdkDirectory}/platforms/${android.compileSdkVersion}/android.jar"
-            classpath = files(variant.javaCompile.classpath.files) + files(ext.androidJar)
-            options.links("http://docs.oracle.com/javase/7/docs/api/");
-            options.links("http://d.android.com/reference/");
-        }
-    }
+    from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
@@ -105,9 +76,9 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
+// add javadoc/source jar tasks as artifacts
 artifacts {
-    archives javadocJar
-    archives sourcesJar
+    archives sourcesJar, javadocJar
 }
 
 Properties properties = new Properties()
