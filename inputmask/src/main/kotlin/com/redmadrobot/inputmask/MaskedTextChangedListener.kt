@@ -178,8 +178,8 @@ open class MaskedTextChangedListener(
         this.listener?.afterTextChanged(edit)
     }
 
-    override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-        this.listener?.beforeTextChanged(p0, p1, p2, p3)
+    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+        this.listener?.beforeTextChanged(s, start, count, after)
     }
 
     override fun onTextChanged(text: CharSequence, cursorPosition: Int, before: Int, count: Int) {

@@ -40,7 +40,7 @@ class ValueState : State {
     /**
      * Constructor for elliptical ```ValueState```
      */
-    constructor(inheritedType: StateType): super(null) {
+    constructor(inheritedType: StateType) : super(null) {
         this.type = StateType.Ellipsis(inheritedType)
     }
 
@@ -68,10 +68,10 @@ class ValueState : State {
         if (!this.accepts(character)) return null
 
         return Next(
-            this.nextState(),
-            character,
-            true,
-            character
+                this.nextState(),
+                character,
+                true,
+                character
         )
     }
 
@@ -88,12 +88,12 @@ class ValueState : State {
 
     override fun toString(): String {
         return when (this.type) {
-            is StateType.Literal -> "[A] -> " + if (null == this.child) "null" else child.toString()
-            is StateType.Numeric -> "[0] -> " + if (null == this.child) "null" else child.toString()
-            is StateType.AlphaNumeric -> "[_] -> " + if (null == this.child) "null" else child.toString()
-            is StateType.Ellipsis -> "[…] -> " + if (null == this.child) "null" else child.toString()
-            is StateType.Custom -> "[" + this.type.character + "] -> " + if (null == this.child) "null" else child.toString()
-        }
+            is StateType.Literal -> "[A] -> "
+            is StateType.Numeric -> "[0] -> "
+            is StateType.AlphaNumeric -> "[_] -> "
+            is StateType.Ellipsis -> "[…] -> "
+            is StateType.Custom -> "[" + this.type.character + "] -> "
+        } + childString
     }
 
 }

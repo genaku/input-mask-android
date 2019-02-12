@@ -25,12 +25,12 @@ import com.redmadrobot.inputmask.model.state.*
  * @author taflanidi
  */
 class Compiler(
-    /**
-     * A list of custom rules to compile square bracket ```[]``` groups of format symbols.
-     *
-     * @see ```Notation``` class.
-     */
-    private val customNotations: List<Notation>
+        /**
+         * A list of custom rules to compile square bracket ```[]``` groups of format symbols.
+         *
+         * @see ```Notation``` class.
+         */
+        private val customNotations: List<Notation>
 ) {
 
     /**
@@ -91,10 +91,10 @@ class Compiler(
         val sanitizedString: String = FormatSanitizer().sanitize(formatString)
 
         return this.compile(
-            sanitizedString,
-            false,
-            false,
-            null
+                sanitizedString,
+                false,
+                false,
+                null
         )
     }
 
@@ -109,10 +109,10 @@ class Compiler(
             '[' -> {
                 if ('\\' != lastCharacter) {
                     return this.compile(
-                        formatString.drop(1),
-                        true,
-                        false,
-                        char
+                            formatString.drop(1),
+                            true,
+                            false,
+                            char
                     )
                 }
             }
@@ -120,10 +120,10 @@ class Compiler(
             '{' -> {
                 if ('\\' != lastCharacter) {
                     return this.compile(
-                        formatString.drop(1),
-                        false,
-                        true,
-                        char
+                            formatString.drop(1),
+                            false,
+                            true,
+                            char
                     )
                 }
             }
@@ -131,10 +131,10 @@ class Compiler(
             ']' -> {
                 if ('\\' != lastCharacter) {
                     return this.compile(
-                        formatString.drop(1),
-                        false,
-                        false,
-                        char
+                            formatString.drop(1),
+                            false,
+                            false,
+                            char
                     )
                 }
             }
@@ -142,10 +142,10 @@ class Compiler(
             '}' -> {
                 if ('\\' != lastCharacter) {
                     return this.compile(
-                        formatString.drop(1),
-                        false,
-                        false,
-                        char
+                            formatString.drop(1),
+                            false,
+                            false,
+                            char
                     )
                 }
             }
@@ -153,119 +153,73 @@ class Compiler(
             '\\' -> {
                 if ('\\' != lastCharacter) {
                     return this.compile(
-                        formatString.drop(1),
-                        valuable,
-                        fixed,
-                        char
+                            formatString.drop(1),
+                            valuable,
+                            fixed,
+                            char
                     )
                 }
             }
         }
 
         if (valuable) {
-            when (char) {
-                '0' -> {
-                    return ValueState(
-                        this.compile(
-                            formatString.drop(1),
-                            true,
-                            false,
-                            char
-                        ),
-                        ValueState.StateType.Numeric()
-                    )
-                }
-
-                'A' -> {
-                    return ValueState(
-                        this.compile(
-                            formatString.drop(1),
-                            true,
-                            false,
-                            char
-                        ),
-                        ValueState.StateType.Literal()
-                    )
-                }
-
-                '_' -> {
-                    return ValueState(
-                        this.compile(
-                            formatString.drop(1),
-                            true,
-                            false,
-                            char
-                        ),
-                        ValueState.StateType.AlphaNumeric()
-                    )
-                }
-
-                '…' -> {
-                    return ValueState(determineInheritedType(lastCharacter))
-                }
-
-                '9' -> {
-                    return OptionalValueState(
-                        this.compile(
-                            formatString.drop(1),
-                            true,
-                            false,
-                            char
-                        ),
-                        OptionalValueState.StateType.Numeric()
-                    )
-                }
-
-                'a' -> {
-                    return OptionalValueState(
-                        this.compile(
-                            formatString.drop(1),
-                            true,
-                            false,
-                            char
-                        ),
-                        OptionalValueState.StateType.Literal()
-                    )
-                }
-
-                '-' -> {
-                    return OptionalValueState(
-                        this.compile(
-                            formatString.drop(1),
-                            true,
-                            false,
-                            char
-                        ),
-                        OptionalValueState.StateType.AlphaNumeric()
-                    )
-                }
-
-                else -> return compileWithCustomNotations(char, formatString)
+            return when (char) {
+                '0' -> getValueState(formatString, char, ValueState.StateType.Numeric())
+                'A' -> getValueState(formatString, char, ValueState.StateType.Literal())
+                '_' -> getValueState(formatString, char, ValueState.StateType.AlphaNumeric())
+                '…' -> ValueState(determineInheritedType(lastCharacter))
+                '9' -> getOptionalValueState(formatString, char, OptionalValueState.StateType.Numeric())
+                'a' -> getOptionalValueState(formatString, char, OptionalValueState.StateType.Literal())
+                '-' -> getOptionalValueState(formatString, char, OptionalValueState.StateType.AlphaNumeric())
+                else -> compileWithCustomNotations(char, formatString)
             }
         }
 
         if (fixed) {
             return FixedState(
-                this.compile(
-                    formatString.drop(1),
-                    false,
-                    true,
+                    this.compile(
+                            formatString.drop(1),
+                            false,
+                            true,
+                            char
+                    ),
                     char
-                ),
-                char
             )
         }
 
         return FreeState(
-            this.compile(
-                formatString.drop(1),
-                false,
-                false,
+                this.compile(
+                        formatString.drop(1),
+                        false,
+                        false,
+                        char
+                ),
                 char
-            ),
-            char
         )
     }
+
+    private fun getValueState(formatString: String, char: Char, stateType: ValueState.StateType) =
+            ValueState(
+                    this.compile(
+                            formatString.drop(1),
+                            true,
+                            false,
+                            char
+                    ),
+                    stateType
+            )
+
+    private fun getOptionalValueState(formatString: String, char: Char, stateType: OptionalValueState.StateType) =
+            OptionalValueState(
+                    this.compile(
+                            formatString.drop(1),
+                            true,
+                            false,
+                            char
+                    ),
+                    stateType
+            )
+
 
     private fun determineInheritedType(lastCharacter: Char?): ValueState.StateType {
         return when (lastCharacter) {
@@ -282,25 +236,9 @@ class Compiler(
         for (customNotation in this.customNotations) {
             if (customNotation.character == char) {
                 return if (customNotation.isOptional) {
-                    OptionalValueState(
-                        this.compile(
-                            string.drop(1),
-                            true,
-                            false,
-                            char
-                        ),
-                        OptionalValueState.StateType.Custom(char, customNotation.characterSet)
-                    )
+                    getOptionalValueState(string, char, OptionalValueState.StateType.Custom(char, customNotation.characterSet))
                 } else {
-                    ValueState(
-                        this.compile(
-                            string.drop(1),
-                            true,
-                            false,
-                            char
-                        ),
-                        ValueState.StateType.Custom(char, customNotation.characterSet)
-                    )
+                    getValueState(string, char, ValueState.StateType.Custom(char, customNotation.characterSet))
                 }
             }
         }
@@ -313,5 +251,5 @@ class Compiler(
         }
         throw FormatError()
     }
-    
+
 }

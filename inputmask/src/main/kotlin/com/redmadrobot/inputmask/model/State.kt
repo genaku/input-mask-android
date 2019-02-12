@@ -10,6 +10,8 @@ package com.redmadrobot.inputmask.model
  */
 abstract class State(val child: State?) {
 
+    protected val childString = child?.toString() ?: "null"
+
     /**
      * Abstract method.
      *
@@ -48,6 +50,7 @@ abstract class State(val child: State?) {
     }
 
     override fun toString(): String {
-        return "BASE -> " + if (null != this.child) this.child.toString() else "null"
+        return "BASE -> $childString"
     }
+
 }
