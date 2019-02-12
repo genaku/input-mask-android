@@ -33,11 +33,11 @@ public final class MainActivity extends Activity {
         final EditText editText = findViewById(R.id.prefix_edit_text);
         final CheckBox checkBox = findViewById(R.id.prefix_check_box);
         final List<String> affineFormats = new ArrayList<>();
-        affineFormats.add("8 ([000]) [000]-[00]-[00]");
+        affineFormats.add("8 ([000]) [Ббб]-[00]-[00]");
 
         final MaskedTextChangedListener listener = MaskedTextChangedListener.Companion.installOn(
             editText,
-            "+7 ([000]) [000]-[00]-[00]",
+            "+7 ([000]) [Ббб]-[00]-[00]",
             affineFormats,
             AffinityCalculationStrategy.PREFIX,
             new MaskedTextChangedListener.ValueListener() {

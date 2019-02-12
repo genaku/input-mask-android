@@ -48,6 +48,9 @@ abstract class State(val child: State?) {
     }
 
     override fun toString(): String {
-        return "BASE -> " + if (null != this.child) this.child.toString() else "null"
+        return "BASE -> $childString"
     }
+
+    protected val childString
+        get() = child?.toString() ?: "null"
 }

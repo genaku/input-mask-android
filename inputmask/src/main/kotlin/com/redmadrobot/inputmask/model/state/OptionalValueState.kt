@@ -22,6 +22,7 @@ class OptionalValueState(child: State, val type: StateType) : State(child) {
     sealed class StateType {
         class Numeric : StateType()
         class Literal : StateType()
+        class Cyrillic : StateType()
         class AlphaNumeric : StateType()
         class Custom(val character: Char, val characterSet: String) : StateType()
     }
@@ -30,6 +31,7 @@ class OptionalValueState(child: State, val type: StateType) : State(child) {
         return when (this.type) {
             is StateType.Numeric -> character.isDigit()
             is StateType.Literal -> character.isLetter()
+            is StateType.Cyrillic -> Character.UnicodeBlock.of(character) == Character.UnicodeBlock.CYRILLIC
             is StateType.AlphaNumeric -> character.isLetterOrDigit()
             is StateType.Custom -> this.type.characterSet.contains(character)
         }
@@ -38,27 +40,28 @@ class OptionalValueState(child: State, val type: StateType) : State(child) {
     override fun accept(character: Char): Next? {
         return if (this.accepts(character)) {
             Next(
-                this.nextState(),
-                character,
-                true,
-                character
+                    this.nextState(),
+                    character,
+                    true,
+                    character
             )
         } else {
             Next(
-                this.nextState(),
-                null,
-                false,
-                null
+                    this.nextState(),
+                    null,
+                    false,
+                    null
             )
         }
     }
 
     override fun toString(): String {
         return when (this.type) {
-            is StateType.Literal -> "[a] -> " + if (null == this.child) "null" else child.toString()
-            is StateType.Numeric -> "[9] -> " + if (null == this.child) "null" else child.toString()
-            is StateType.AlphaNumeric -> "[-] -> " + if (null == this.child) "null" else child.toString()
-            is StateType.Custom -> "[" + this.type.character + "] -> " + if (null == this.child) "null" else child.toString()
-        }
+            is StateType.Literal -> "[a] -> "
+            is StateType.Numeric -> "[9] -> "
+            is StateType.Cyrillic -> "[б] -> "
+            is StateType.AlphaNumeric -> "[-] -> "
+            is StateType.Custom -> "[" + this.type.character + "] -> "
+        } + childString
     }
 }

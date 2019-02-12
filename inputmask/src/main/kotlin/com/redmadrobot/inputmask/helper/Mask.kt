@@ -25,7 +25,7 @@ class Mask(format: String, private val customNotations: List<Notation>) {
     /**
      * Convenience constructor.
      */
-    constructor(format: String): this(format, emptyList())
+    constructor(format: String) : this(format, emptyList())
 
     /**
      * ### Result
@@ -33,22 +33,22 @@ class Mask(format: String, private val customNotations: List<Notation>) {
      * The end result of mask application to the user input string.
      */
     data class Result(
-        /**
-         * Formatted text with updated caret position.
-         */
-        val formattedText: CaretString,
-        /**
-         * Value, extracted from formatted text according to mask format.
-         */
-        val extractedValue: String,
-        /**
-         * Calculated absolute affinity value between the mask format and input text.
-         */
-        val affinity: Int,
-        /**
-         * User input is complete.
-         */
-        val complete: Boolean
+            /**
+             * Formatted text with updated caret position.
+             */
+            val formattedText: CaretString,
+            /**
+             * Value, extracted from formatted text according to mask format.
+             */
+            val extractedValue: String,
+            /**
+             * Calculated absolute affinity value between the mask format and input text.
+             */
+            val affinity: Int,
+            /**
+             * User input is complete.
+             */
+            val complete: Boolean
     )
 
     companion object Factory {
@@ -150,13 +150,13 @@ class Mask(format: String, private val customNotations: List<Notation>) {
         }
 
         return Result(
-            CaretString(
-                modifiedString,
-                modifiedCaretPosition
-            ),
-            extractedValue,
-            affinity,
-            this.noMandatoryCharactersLeftAfterState(state)
+                CaretString(
+                        modifiedString,
+                        modifiedCaretPosition
+                ),
+                extractedValue,
+                affinity,
+                this.noMandatoryCharactersLeftAfterState(state)
         )
     }
 
@@ -172,70 +172,40 @@ class Mask(format: String, private val customNotations: List<Notation>) {
      *
      * @return Minimal satisfying count of characters inside the text field.
      */
-    fun acceptableTextLength(): Int {
-        var state: State? = this.initialState
-        var length = 0
-
-        while (null != state && state !is EOLState) {
-            if (state is FixedState || state is FreeState || state is ValueState) {
-                length += 1
-            }
-            state = state.child
-        }
-
-        return length
-    }
+    fun acceptableTextLength() =
+            countStates { state -> (state is FixedState || state is FreeState || state is ValueState) }
 
     /**
      *  Maximal length of the text inside the field.
      *
      *  @return Total available count of mandatory and optional characters inside the text field.
      */
-    fun totalTextLength(): Int {
-        var state: State? = this.initialState
-        var length = 0
-
-        while (null != state && state !is EOLState) {
-            if (state is FixedState || state is FreeState || state is ValueState || state is OptionalValueState) {
-                length += 1
-            }
-            state = state.child
-        }
-
-        return length
-    }
+    fun totalTextLength() =
+            countStates { state -> (state is FixedState || state is FreeState || state is ValueState || state is OptionalValueState) }
 
     /**
      * Minimal length of the extracted value with all mandatory characters filled.\
      *
      * @return Minimal satisfying count of characters in extracted value.
      */
-    fun acceptableValueLength(): Int {
-        var state: State? = this.initialState
-        var length = 0
-
-        while (null != state && state !is EOLState) {
-            if (state is FixedState || state is ValueState) {
-                length += 1
-            }
-            state = state.child
-        }
-
-        return length
-    }
+    fun acceptableValueLength() =
+            countStates { state -> (state is FixedState || state is ValueState) }
 
     /**
      * Maximal length of the extracted value.
      *
      * @return Total available count of mandatory and optional characters for extracted value.
      */
-    fun totalValueLength(): Int {
+    fun totalValueLength() =
+            countStates { state -> (state is FixedState || state is ValueState || state is OptionalValueState) }
+
+    private fun countStates(toCount: (State?) -> Boolean): Int {
         var state: State? = this.initialState
         var length = 0
 
         while (null != state && state !is EOLState) {
-            if (state is FixedState || state is ValueState || state is OptionalValueState) {
-                length += 1
+            if (toCount(state)) {
+                length++
             }
             state = state.child
         }
@@ -270,6 +240,10 @@ class Mask(format: String, private val customNotations: List<Notation>) {
                     this.appendPlaceholder(state.child, placeholder + "a")
                 }
 
+                is OptionalValueState.StateType.Cyrillic -> {
+                    this.appendPlaceholder(state.child, placeholder + "б")
+                }
+
                 is OptionalValueState.StateType.Numeric -> {
                     this.appendPlaceholder(state.child, placeholder + "0")
                 }
@@ -294,6 +268,10 @@ class Mask(format: String, private val customNotations: List<Notation>) {
                     this.appendPlaceholder(state.child, placeholder + "0")
                 }
 
+                is ValueState.StateType.Cyrillic -> {
+                    this.appendPlaceholder(state.child, placeholder + "б")
+                }
+
                 is ValueState.StateType.Ellipsis -> placeholder
 
                 is ValueState.StateType.Custom -> {
@@ -305,15 +283,10 @@ class Mask(format: String, private val customNotations: List<Notation>) {
         return placeholder
     }
 
-    private fun noMandatoryCharactersLeftAfterState(state: State): Boolean {
-        return if (state is EOLState) {
-            true
-        } else if (state is ValueState) {
-            return state.isElliptical
-        } else if (state is FixedState) {
-            false
-        } else {
-            this.noMandatoryCharactersLeftAfterState(state.nextState())
-        }
+    private fun noMandatoryCharactersLeftAfterState(state: State): Boolean = when (state) {
+        is EOLState -> true
+        is ValueState -> state.isElliptical
+        is FixedState -> false
+        else -> this.noMandatoryCharactersLeftAfterState(state.nextState())
     }
 }

@@ -25,12 +25,14 @@ class ValueState : State {
      * ```Numeric``` stands for [9] characters
      * ```Literal``` stands for [a] characters
      * ```AlphaNumeric``` stands for [-] characters
+     * ```Cyrillic``` stands for [Б] characters
      * ```Ellipsis``` stands for […] characters
      */
     sealed class StateType {
         class Numeric : StateType()
         class Literal : StateType()
         class AlphaNumeric : StateType()
+        class Cyrillic : StateType()
         class Ellipsis(val inheritedType: StateType) : StateType()
         class Custom(val character: Char, val characterSet: String) : StateType()
     }
@@ -40,7 +42,7 @@ class ValueState : State {
     /**
      * Constructor for elliptical ```ValueState```
      */
-    constructor(inheritedType: StateType): super(null) {
+    constructor(inheritedType: StateType) : super(null) {
         this.type = StateType.Ellipsis(inheritedType)
     }
 
@@ -54,10 +56,12 @@ class ValueState : State {
             is StateType.Numeric -> character.isDigit()
             is StateType.Literal -> character.isLetter()
             is StateType.AlphaNumeric -> character.isLetterOrDigit()
+            is StateType.Cyrillic -> Character.UnicodeBlock.of(character) == Character.UnicodeBlock.CYRILLIC
             is StateType.Ellipsis -> when (type.inheritedType) {
                 is StateType.Numeric -> character.isDigit()
                 is StateType.Literal -> character.isLetter()
                 is StateType.AlphaNumeric -> character.isLetterOrDigit()
+                is StateType.Cyrillic -> Character.UnicodeBlock.of(character) == Character.UnicodeBlock.CYRILLIC
                 else -> false
             }
             is StateType.Custom -> type.characterSet.contains(character)
@@ -68,10 +72,10 @@ class ValueState : State {
         if (!this.accepts(character)) return null
 
         return Next(
-            this.nextState(),
-            character,
-            true,
-            character
+                this.nextState(),
+                character,
+                true,
+                character
         )
     }
 
@@ -88,12 +92,13 @@ class ValueState : State {
 
     override fun toString(): String {
         return when (this.type) {
-            is StateType.Literal -> "[A] -> " + if (null == this.child) "null" else child.toString()
-            is StateType.Numeric -> "[0] -> " + if (null == this.child) "null" else child.toString()
-            is StateType.AlphaNumeric -> "[_] -> " + if (null == this.child) "null" else child.toString()
-            is StateType.Ellipsis -> "[…] -> " + if (null == this.child) "null" else child.toString()
-            is StateType.Custom -> "[" + this.type.character + "] -> " + if (null == this.child) "null" else child.toString()
-        }
+            is StateType.Literal -> "[A] -> "
+            is StateType.Numeric -> "[0] -> "
+            is StateType.AlphaNumeric -> "[_] -> "
+            is StateType.Cyrillic -> "[Б] -> "
+            is StateType.Ellipsis -> "[…] -> "
+            is StateType.Custom -> "[" + this.type.character + "] -> "
+        } + childString
     }
 
 }
