@@ -6,7 +6,7 @@ const val MASK_CHARS_CLOSE = ']'
 const val FIXED_CHARS_OPEN = '{'
 const val FIXED_CHARS_CLOSE = '}'
 
-fun String.addMaskBraces() =
+fun String.wrapWithMaskBraces() =
         "$MASK_CHARS_OPEN$this$MASK_CHARS_CLOSE"
 
 fun String.addFixedBraces() =

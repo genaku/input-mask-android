@@ -2,7 +2,7 @@ package com.redmadrobot.inputmask.model.state
 
 import com.redmadrobot.inputmask.model.Next
 import com.redmadrobot.inputmask.model.State
-import com.redmadrobot.inputmask.model.addMaskBraces
+import com.redmadrobot.inputmask.model.wrapWithMaskBraces
 
 /**
  * ### ValueState
@@ -87,7 +87,7 @@ class ValueState : State {
         is StateType.Numeric -> "[0] -> "
         is StateType.AlphaNumeric -> "[_] -> "
         is StateType.Ellipsis -> "[…] -> "
-        is StateType.Custom -> type.character.toString().addMaskBraces() + " -> "
+        is StateType.Custom -> type.character.toString().wrapWithMaskBraces() + " -> "
     } + childString
 
 }

@@ -59,12 +59,9 @@ class FormatSanitizer {
      */
     @Throws(Compiler.FormatError::class)
     fun sanitize(formatString: String): String {
-        this.checkOpenBraces(formatString)
-
-        val blocks: List<String> =
-                this.divideBlocksWithMixedCharacters(this.getFormatBlocks(formatString))
-
-        return this.sortFormatBlocks(blocks).joinToString("")
+        checkOpenBraces(formatString)
+        val blocks = divideBlocksWithMixedCharacters(getFormatBlocks(formatString))
+        return sortFormatBlocks(blocks).joinToString("")
     }
 
     private fun getFormatBlocks(formatString: String): List<String> {
@@ -123,11 +120,8 @@ class FormatSanitizer {
                         break
                     }
 
-                    if (blockCharacter == '0' || blockCharacter == '9') {
-                        if (blockBuffer.contains("A")
-                                || blockBuffer.contains("a")
-                                || blockBuffer.contains("-")
-                                || blockBuffer.contains("_")) {
+                    if ("09".contains(blockCharacter)) {
+                        if (blockBuffer.containsAny("A", "a", "-", "_")) {
                             blockBuffer += MASK_CHARS_CLOSE
                             resultingBlocks.add(blockBuffer)
                             blockBuffer = "$MASK_CHARS_OPEN$blockCharacter"
@@ -135,11 +129,8 @@ class FormatSanitizer {
                         }
                     }
 
-                    if (blockCharacter == 'A' || blockCharacter == 'a') {
-                        if (blockBuffer.contains("0")
-                                || blockBuffer.contains("9")
-                                || blockBuffer.contains("-")
-                                || blockBuffer.contains("_")) {
+                    if ("Aa".contains(blockCharacter)) {
+                        if (blockBuffer.containsAny("0", "9", "-", "_")) {
                             blockBuffer += MASK_CHARS_CLOSE
                             resultingBlocks.add(blockBuffer)
                             blockBuffer = "$MASK_CHARS_OPEN$blockCharacter"
@@ -147,11 +138,8 @@ class FormatSanitizer {
                         }
                     }
 
-                    if (blockCharacter == '-' || blockCharacter == '_') {
-                        if (blockBuffer.contains("0")
-                                || blockBuffer.contains("9")
-                                || blockBuffer.contains("A")
-                                || blockBuffer.contains("a")) {
+                    if ("-_".contains(blockCharacter)) {
+                        if (blockBuffer.containsAny("0", "9", "A", "a")) {
                             blockBuffer += MASK_CHARS_CLOSE
                             resultingBlocks.add(blockBuffer)
                             blockBuffer = "$MASK_CHARS_OPEN$blockCharacter"
@@ -176,13 +164,17 @@ class FormatSanitizer {
         for (block in blocks) {
             var sortedBlock: String
             if (block.startsWith(MASK_CHARS_OPEN)) {
-                if (block.contains("0") || block.contains("9")) {
-                    sortedBlock = block.removeMaskBraces().sortChars().addMaskBraces()
-                } else if (block.contains("a") || block.contains("A")) {
-                    sortedBlock = block.removeMaskBraces().sortChars().addMaskBraces()
-                } else {
-                    sortedBlock = block.removeMaskBraces().replace("_", "A").replace("-", "a").sortChars().addMaskBraces()
-                    sortedBlock = sortedBlock.replace("A", "_").replace("a", "-")
+                when {
+                    block.containsAny("0", "0") -> {
+                        sortedBlock = block.removeAllMaskBraces().sortChars().wrapWithMaskBraces()
+                    }
+                    block.containsAny("a", "A") -> {
+                        sortedBlock = block.removeAllMaskBraces().sortChars().wrapWithMaskBraces()
+                    }
+                    else -> {
+                        sortedBlock = block.removeAllMaskBraces().replace("_", "A").replace("-", "a").sortChars().wrapWithMaskBraces()
+                        sortedBlock = sortedBlock.replace("A", "_").replace("a", "-")
+                    }
                 }
             } else {
                 sortedBlock = block
@@ -194,7 +186,9 @@ class FormatSanitizer {
         return sortedBlocks
     }
 
-    private fun String.removeMaskBraces() =
+    private fun String.containsAny(vararg s: String) = (findAnyOf(s.asList()) != null)
+
+    private fun String.removeAllMaskBraces() =
             replace("$MASK_CHARS_OPEN", "").replace("$MASK_CHARS_CLOSE", "")
 
     private fun String.sortChars() =
@@ -206,35 +200,32 @@ class FormatSanitizer {
         var curlyBraceOpen = false
 
         for (char in string.toCharArray()) {
-            if (ESCAPE_CHAR == char) {
-                escape = !escape
-                continue
-            }
-
-            if (MASK_CHARS_OPEN == char) {
-                if (squareBraceOpen) {
-                    throw Compiler.FormatError()
+            when (char) {
+                ESCAPE_CHAR -> {
+                    escape = !escape
                 }
-                squareBraceOpen = true && !escape
-            }
-
-            if (MASK_CHARS_CLOSE == char && !escape) {
-                squareBraceOpen = false
-            }
-
-            if (FIXED_CHARS_OPEN == char) {
-                if (curlyBraceOpen) {
-                    throw Compiler.FormatError()
+                MASK_CHARS_OPEN -> {
+                    if (squareBraceOpen) {
+                        throw Compiler.FormatError()
+                    }
+                    squareBraceOpen = !escape
                 }
-                curlyBraceOpen = true && !escape
+                MASK_CHARS_CLOSE -> if (!escape) {
+                    squareBraceOpen = false
+                }
+                FIXED_CHARS_OPEN -> {
+                    if (curlyBraceOpen) {
+                        throw Compiler.FormatError()
+                    }
+                    curlyBraceOpen = !escape
+                }
+                FIXED_CHARS_CLOSE -> if (!escape) {
+                    curlyBraceOpen = false
+                }
             }
-
-            if (FIXED_CHARS_CLOSE == char && !escape) {
-                curlyBraceOpen = false
+            if (ESCAPE_CHAR != char) {
+                escape = false
             }
-
-            escape = false
         }
     }
-
 }

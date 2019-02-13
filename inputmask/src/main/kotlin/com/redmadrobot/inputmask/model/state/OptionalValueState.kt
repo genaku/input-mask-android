@@ -2,7 +2,7 @@ package com.redmadrobot.inputmask.model.state
 
 import com.redmadrobot.inputmask.model.Next
 import com.redmadrobot.inputmask.model.State
-import com.redmadrobot.inputmask.model.addMaskBraces
+import com.redmadrobot.inputmask.model.wrapWithMaskBraces
 
 /**
  * ### OptionalValueState
@@ -49,6 +49,6 @@ class OptionalValueState(child: State, val type: StateType) : State(child) {
         is StateType.Literal -> "[a] -> "
         is StateType.Numeric -> "[9] -> "
         is StateType.AlphaNumeric -> "[-] -> "
-        is StateType.Custom -> this.type.character.toString().addMaskBraces() + " -> "
+        is StateType.Custom -> this.type.character.toString().wrapWithMaskBraces() + " -> "
     } + childString
 }
