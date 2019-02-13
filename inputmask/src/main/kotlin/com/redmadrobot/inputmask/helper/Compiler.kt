@@ -1,7 +1,6 @@
 package com.redmadrobot.inputmask.helper
 
-import com.redmadrobot.inputmask.model.Notation
-import com.redmadrobot.inputmask.model.State
+import com.redmadrobot.inputmask.model.*
 import com.redmadrobot.inputmask.model.state.*
 
 /**
@@ -106,19 +105,14 @@ class Compiler(
         val char: Char = formatString.first()
 
         when (char) {
-            '[' -> {
-                if ('\\' != lastCharacter) {
-                    return this.compile(
-                            formatString.drop(1),
-                            true,
-                            false,
-                            char
-                    )
+            MASK_CHARS_OPEN -> {
+                if (ESCAPE_CHAR != lastCharacter) {
+                    return compileValueChar(formatString, char)
                 }
             }
 
-            '{' -> {
-                if ('\\' != lastCharacter) {
+            FIXED_CHARS_OPEN -> {
+                if (ESCAPE_CHAR != lastCharacter) {
                     return this.compile(
                             formatString.drop(1),
                             false,
@@ -128,8 +122,8 @@ class Compiler(
                 }
             }
 
-            ']' -> {
-                if ('\\' != lastCharacter) {
+            MASK_CHARS_CLOSE -> {
+                if (ESCAPE_CHAR != lastCharacter) {
                     return this.compile(
                             formatString.drop(1),
                             false,
@@ -139,8 +133,8 @@ class Compiler(
                 }
             }
 
-            '}' -> {
-                if ('\\' != lastCharacter) {
+            FIXED_CHARS_CLOSE -> {
+                if (ESCAPE_CHAR != lastCharacter) {
                     return this.compile(
                             formatString.drop(1),
                             false,
@@ -150,8 +144,8 @@ class Compiler(
                 }
             }
 
-            '\\' -> {
-                if ('\\' != lastCharacter) {
+            ESCAPE_CHAR -> {
+                if (ESCAPE_CHAR != lastCharacter) {
                     return this.compile(
                             formatString.drop(1),
                             valuable,
@@ -199,37 +193,25 @@ class Compiler(
     }
 
     private fun getValueState(formatString: String, char: Char, stateType: ValueState.StateType) =
-            ValueState(
-                    this.compile(
-                            formatString.drop(1),
-                            true,
-                            false,
-                            char
-                    ),
-                    stateType
-            )
+            ValueState(compileValueChar(formatString, char), stateType)
 
     private fun getOptionalValueState(formatString: String, char: Char, stateType: OptionalValueState.StateType) =
-            OptionalValueState(
-                    this.compile(
-                            formatString.drop(1),
-                            true,
-                            false,
-                            char
-                    ),
-                    stateType
-            )
+            OptionalValueState(compileValueChar(formatString, char), stateType)
 
+    private fun compileValueChar(formatString: String, char: Char) = compile(
+            formatString.drop(1),
+            true,
+            false,
+            char
+    )
 
-    private fun determineInheritedType(lastCharacter: Char?): ValueState.StateType {
-        return when (lastCharacter) {
-            '0', '9' -> ValueState.StateType.Numeric()
-            'A', 'a' -> ValueState.StateType.Literal()
-            '_', '-' -> ValueState.StateType.AlphaNumeric()
-            '…' -> ValueState.StateType.AlphaNumeric()
-            '[' -> ValueState.StateType.AlphaNumeric()
-            else -> determineTypeWithCustomNotations(lastCharacter)
-        }
+    private fun determineInheritedType(lastCharacter: Char?): ValueState.StateType = when (lastCharacter) {
+        '0', '9' -> ValueState.StateType.Numeric()
+        'A', 'a' -> ValueState.StateType.Literal()
+        '_', '-' -> ValueState.StateType.AlphaNumeric()
+        '…' -> ValueState.StateType.AlphaNumeric()
+        MASK_CHARS_OPEN -> ValueState.StateType.AlphaNumeric()
+        else -> determineTypeWithCustomNotations(lastCharacter)
     }
 
     private fun compileWithCustomNotations(char: Char, string: String): State {

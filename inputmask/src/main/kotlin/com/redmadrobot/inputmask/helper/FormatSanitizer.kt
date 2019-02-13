@@ -1,5 +1,6 @@
 package com.redmadrobot.inputmask.helper
 
+import com.redmadrobot.inputmask.model.*
 import java.util.*
 
 /**
@@ -72,7 +73,7 @@ class FormatSanitizer {
         var escape = false
 
         for (char in formatString.toCharArray()) {
-            if ('\\' == char) {
+            if (ESCAPE_CHAR == char) {
                 if (!escape) {
                     escape = true
                     currentBlock += char
@@ -80,7 +81,7 @@ class FormatSanitizer {
                 }
             }
 
-            if (('[' == char || '{' == char) && !escape) {
+            if ((MASK_CHARS_OPEN == char || FIXED_CHARS_OPEN == char) && !escape) {
                 if (currentBlock.isNotEmpty()) {
                     blocks.add(currentBlock)
                 }
@@ -89,7 +90,7 @@ class FormatSanitizer {
 
             currentBlock += char
 
-            if ((']' == char || '}' == char) && !escape) {
+            if ((MASK_CHARS_CLOSE == char || FIXED_CHARS_CLOSE == char) && !escape) {
                 blocks.add(currentBlock)
                 currentBlock = ""
             }
@@ -108,15 +109,15 @@ class FormatSanitizer {
         val resultingBlocks: MutableList<String> = ArrayList()
 
         for (block in blocks) {
-            if (block.startsWith("[")) {
+            if (block.startsWith(MASK_CHARS_OPEN)) {
                 var blockBuffer = ""
                 for (blockCharacter in block) {
-                    if (blockCharacter == '[') {
+                    if (blockCharacter == MASK_CHARS_OPEN) {
                         blockBuffer += blockCharacter
                         continue
                     }
 
-                    if (blockCharacter == ']' && !blockBuffer.endsWith("\\")) {
+                    if (blockCharacter == MASK_CHARS_CLOSE && !blockBuffer.endsWith(ESCAPE_CHAR)) {
                         blockBuffer += blockCharacter
                         resultingBlocks.add(blockBuffer)
                         break
@@ -127,9 +128,9 @@ class FormatSanitizer {
                                 || blockBuffer.contains("a")
                                 || blockBuffer.contains("-")
                                 || blockBuffer.contains("_")) {
-                            blockBuffer += "]"
+                            blockBuffer += MASK_CHARS_CLOSE
                             resultingBlocks.add(blockBuffer)
-                            blockBuffer = "[" + blockCharacter
+                            blockBuffer = "$MASK_CHARS_OPEN$blockCharacter"
                             continue
                         }
                     }
@@ -139,9 +140,9 @@ class FormatSanitizer {
                                 || blockBuffer.contains("9")
                                 || blockBuffer.contains("-")
                                 || blockBuffer.contains("_")) {
-                            blockBuffer += "]"
+                            blockBuffer += MASK_CHARS_CLOSE
                             resultingBlocks.add(blockBuffer)
-                            blockBuffer = "[" + blockCharacter
+                            blockBuffer = "$MASK_CHARS_OPEN$blockCharacter"
                             continue
                         }
                     }
@@ -151,9 +152,9 @@ class FormatSanitizer {
                                 || blockBuffer.contains("9")
                                 || blockBuffer.contains("A")
                                 || blockBuffer.contains("a")) {
-                            blockBuffer += "]"
+                            blockBuffer += MASK_CHARS_CLOSE
                             resultingBlocks.add(blockBuffer)
-                            blockBuffer = "[" + blockCharacter
+                            blockBuffer = "$MASK_CHARS_OPEN$blockCharacter"
                             continue
                         }
                     }
@@ -174,13 +175,13 @@ class FormatSanitizer {
 
         for (block in blocks) {
             var sortedBlock: String
-            if (block.startsWith("[")) {
+            if (block.startsWith(MASK_CHARS_OPEN)) {
                 if (block.contains("0") || block.contains("9")) {
-                    sortedBlock = "[" + block.replace("[", "").replace("]", "").toCharArray().sorted().joinToString("") + "]"
+                    sortedBlock = block.removeMaskBraces().sortChars().addMaskBraces()
                 } else if (block.contains("a") || block.contains("A")) {
-                    sortedBlock = "[" + block.replace("[", "").replace("]", "").toCharArray().sorted().joinToString("") + "]"
+                    sortedBlock = block.removeMaskBraces().sortChars().addMaskBraces()
                 } else {
-                    sortedBlock = "[" + block.replace("[", "").replace("]", "").replace("_", "A").replace("-", "a").toCharArray().sorted().joinToString("") + "]"
+                    sortedBlock = block.removeMaskBraces().replace("_", "A").replace("-", "a").sortChars().addMaskBraces()
                     sortedBlock = sortedBlock.replace("A", "_").replace("a", "-")
                 }
             } else {
@@ -193,36 +194,42 @@ class FormatSanitizer {
         return sortedBlocks
     }
 
+    private fun String.removeMaskBraces() =
+            replace("$MASK_CHARS_OPEN", "").replace("$MASK_CHARS_CLOSE", "")
+
+    private fun String.sortChars() =
+            toCharArray().sorted().joinToString("")
+
     private fun checkOpenBraces(string: String) {
         var escape = false
         var squareBraceOpen = false
         var curlyBraceOpen = false
 
         for (char in string.toCharArray()) {
-            if ('\\' == char) {
+            if (ESCAPE_CHAR == char) {
                 escape = !escape
                 continue
             }
 
-            if ('[' == char) {
+            if (MASK_CHARS_OPEN == char) {
                 if (squareBraceOpen) {
                     throw Compiler.FormatError()
                 }
                 squareBraceOpen = true && !escape
             }
 
-            if (']' == char && !escape) {
+            if (MASK_CHARS_CLOSE == char && !escape) {
                 squareBraceOpen = false
             }
 
-            if ('{' == char) {
+            if (FIXED_CHARS_OPEN == char) {
                 if (curlyBraceOpen) {
                     throw Compiler.FormatError()
                 }
                 curlyBraceOpen = true && !escape
             }
 
-            if ('}' == char && !escape) {
+            if (FIXED_CHARS_CLOSE == char && !escape) {
                 curlyBraceOpen = false
             }
 

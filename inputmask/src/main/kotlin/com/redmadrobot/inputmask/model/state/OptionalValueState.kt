@@ -2,6 +2,7 @@ package com.redmadrobot.inputmask.model.state
 
 import com.redmadrobot.inputmask.model.Next
 import com.redmadrobot.inputmask.model.State
+import com.redmadrobot.inputmask.model.addMaskBraces
 
 /**
  * ### OptionalValueState
@@ -26,39 +27,28 @@ class OptionalValueState(child: State, val type: StateType) : State(child) {
         class Custom(val character: Char, val characterSet: String) : StateType()
     }
 
-    private fun accepts(character: Char): Boolean {
-        return when (this.type) {
-            is StateType.Numeric -> character.isDigit()
-            is StateType.Literal -> character.isLetter()
-            is StateType.AlphaNumeric -> character.isLetterOrDigit()
-            is StateType.Custom -> this.type.characterSet.contains(character)
-        }
+    private fun accepts(character: Char): Boolean = when (this.type) {
+        is StateType.Numeric -> character.isDigit()
+        is StateType.Literal -> character.isLetter()
+        is StateType.AlphaNumeric -> character.isLetterOrDigit()
+        is StateType.Custom -> this.type.characterSet.contains(character)
     }
 
     override fun accept(character: Char): Next? {
-        return if (this.accepts(character)) {
-            Next(
-                    this.nextState(),
-                    character,
-                    true,
-                    character
-            )
-        } else {
-            Next(
-                    this.nextState(),
-                    null,
-                    false,
-                    null
-            )
-        }
+        val acceptsCharacter = accepts(character)
+        val acceptedCharacter = if (acceptsCharacter) character else null
+        return Next(
+                this.nextState(),
+                acceptedCharacter,
+                acceptsCharacter,
+                acceptedCharacter
+        )
     }
 
-    override fun toString(): String {
-        return when (this.type) {
-            is StateType.Literal -> "[a] -> "
-            is StateType.Numeric -> "[9] -> "
-            is StateType.AlphaNumeric -> "[-] -> "
-            is StateType.Custom -> "[" + this.type.character + "] -> "
-        } + childString
-    }
+    override fun toString(): String = when (this.type) {
+        is StateType.Literal -> "[a] -> "
+        is StateType.Numeric -> "[9] -> "
+        is StateType.AlphaNumeric -> "[-] -> "
+        is StateType.Custom -> this.type.character.toString().addMaskBraces() + " -> "
+    } + childString
 }

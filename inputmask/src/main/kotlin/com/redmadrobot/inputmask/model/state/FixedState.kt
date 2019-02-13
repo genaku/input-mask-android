@@ -2,6 +2,7 @@ package com.redmadrobot.inputmask.model.state
 
 import com.redmadrobot.inputmask.model.Next
 import com.redmadrobot.inputmask.model.State
+import com.redmadrobot.inputmask.model.addFixedBraces
 
 /**
  * ### FixedState
@@ -17,34 +18,30 @@ import com.redmadrobot.inputmask.model.State
  */
 class FixedState(child: State?, val ownCharacter: Char) : State(child) {
 
-    override fun accept(character: Char): Next? {
-        return if (this.ownCharacter == character) {
-            Next(
-                this.nextState(),
-                character,
-                true,
-                character
-            )
-        } else {
-            Next(
-                this.nextState(),
-                this.ownCharacter,
-                false,
-                this.ownCharacter
-            )
-        }
-    }
+    override fun accept(character: Char): Next? =
+            if (this.ownCharacter == character) {
+                Next(
+                        this.nextState(),
+                        character,
+                        true,
+                        character
+                )
+            } else {
+                Next(
+                        this.nextState(),
+                        this.ownCharacter,
+                        false,
+                        this.ownCharacter
+                )
+            }
 
-    override fun autocomplete(): Next? {
-        return Next(
+    override fun autocomplete(): Next? = Next(
             this.nextState(),
             this.ownCharacter,
             false,
             this.ownCharacter
-        )
-    }
+    )
 
-    override fun toString(): String {
-        return "{" + this.ownCharacter + "} -> " + if (null == this.child) "null" else child.toString()
-    }
+    override fun toString(): String =
+            "${this.ownCharacter.toString().addFixedBraces()} -> $childString"
 }
