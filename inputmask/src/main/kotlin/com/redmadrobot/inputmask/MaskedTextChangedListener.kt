@@ -172,7 +172,7 @@ open class MaskedTextChangedListener(
         Log.d("afterTextChanged", "object: $this")
         field.get()?.apply {
             removeTextChangedListener(this@MaskedTextChangedListener)
-            val newText = textPresentationStrategy.getTextToShow(afterText, ::colorText)
+            val newText = textPresentationStrategy.getTextToShow(afterText, autocomplete, ::colorText)
             Log.d("afterTextChanged", "aftertext: $afterText {$caretPosition}")
             setText(newText)
             if (showPlaceholder && caretPosition > newText.length) {

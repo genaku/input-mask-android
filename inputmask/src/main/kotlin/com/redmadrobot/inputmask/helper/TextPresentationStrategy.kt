@@ -25,19 +25,16 @@ enum class TextPresentationStrategy {
         return storedText
     }
 
-    fun getTextToShow(text: String, colorText: (String, Int) -> CharSequence): CharSequence =
+    fun getTextToShow(text: String, autocomplete: Boolean, colorText: (String, Int) -> CharSequence): CharSequence =
             when (this) {
                 NO_PLACEHOLDER -> text
-                SHOW_PLACEHOLDER -> addPlaceholderAndColor(text, colorText)
+                SHOW_PLACEHOLDER -> addPlaceholderAndColor(text, autocomplete, colorText)
             }
 
-    private fun addPlaceholderAndColor(text: String, colorText: (String, Int) -> CharSequence): CharSequence {
-        val placeholder = mask?.placeholder(text.length) ?: ""
-        val fullText = if (text.length >= placeholder.length) {
-            text
-        } else {
-            text + placeholder.substring(Math.min(text.length, placeholder.length - 1))
-        }
+    private fun addPlaceholderAndColor(text: String, autocomplete: Boolean, colorText: (String, Int) -> CharSequence): CharSequence {
+        val caretString = CaretString(storedText, storedText.length)
+        val placeholder = mask?.placeholder(caretString, autocomplete) ?: ""
+        val fullText = text + placeholder
 
         Log.d("getColoredText", "text: [$text] [$fullText] place [$placeholder]")
         return colorText(fullText, text.length)

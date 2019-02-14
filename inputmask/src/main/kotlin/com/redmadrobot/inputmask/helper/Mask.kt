@@ -20,7 +20,7 @@ import java.util.*
  *
  * @author taflanidi
  */
-class Mask(format: String, private val customNotations: List<Notation>) {
+class Mask(format: String, customNotations: List<Notation>) {
 
     /**
      * Convenience constructor.
@@ -160,19 +160,49 @@ class Mask(format: String, private val customNotations: List<Notation>) {
         )
     }
 
+    private fun getEndState(text: CaretString, autocomplete: Boolean): State {
+        val iterator = CaretStringIterator(text)
+
+        var state: State = initialState
+        var beforeCaret: Boolean = iterator.beforeCaret()
+        var character: Char? = iterator.next()
+
+        while (null != character) {
+            val next: Next? = state.accept(character)
+            if (null != next) {
+                state = next.state
+                if (next.pass) {
+                    beforeCaret = iterator.beforeCaret()
+                    character = iterator.next()
+                }
+            } else {
+                beforeCaret = iterator.beforeCaret()
+                character = iterator.next()
+            }
+        }
+
+        while (autocomplete && beforeCaret) {
+            val next: Next = state.autocomplete() ?: break
+            state = next.state
+        }
+        return state
+    }
+
     /**
      * Generate placeholder.
      *
      * @return Placeholder string.
      */
-    fun placeholder(): String = appendPlaceholder(initialState, "")
+    fun placeholder(): String =
+            appendPlaceholder(initialState, "")
 
     /**
      * Generate placeholder for dynamic view
      *
      * @return Placeholder string.
      */
-    fun placeholder(pos: Int): String = placeholder() // TODO
+    fun placeholder(text: CaretString, autocomplete: Boolean): String =
+            appendPlaceholderFrom(getEndState(text, autocomplete), "")
 
     /**
      * Minimal length of the text inside the field to fill all mandatory characters in the mask.
@@ -218,6 +248,29 @@ class Mask(format: String, private val customNotations: List<Notation>) {
         }
 
         return length
+    }
+
+    private fun appendPlaceholderFrom(state: State?, placeholder: String): String {
+        state?: return placeholder
+
+        val pos = 0
+        return when (state) {
+            is FixedState -> appendPlaceholderFrom(state.child, appendCharIfPosIsZero(pos, placeholder, state.ownCharacter))
+            is FreeState -> appendPlaceholderFrom(state.child, appendCharIfPosIsZero(pos, placeholder, state.ownCharacter))
+            is OptionalValueState -> {
+                val viewChar = if (state.type is OptionalValueState.StateType.Custom) state.type.character else state.viewChar
+                if (pos == 0) appendCharIfPosIsZero(pos, placeholder, viewChar) else appendPlaceholderFrom(state.child, appendCharIfPosIsZero(pos, placeholder, viewChar))
+            }
+            is ValueState -> {
+                val viewChar = if (state.type is ValueState.StateType.Custom) state.type.character else state.viewChar
+                appendPlaceholderFrom(state.child, appendCharIfPosIsZero(pos, placeholder, viewChar))
+            }
+            else -> placeholder
+        }
+    }
+
+    private fun appendCharIfPosIsZero(startPos: Int, placeholder: String, char: Char): String {
+        return if (startPos == 0) placeholder + char else placeholder
     }
 
     private fun appendPlaceholder(state: State?, placeholder: String): String {

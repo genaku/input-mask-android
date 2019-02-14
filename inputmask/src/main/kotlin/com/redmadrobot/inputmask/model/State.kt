@@ -12,6 +12,8 @@ abstract class State(val child: State?) {
 
     protected val childString = child?.toString() ?: "null"
 
+    open val viewChar: Char = '*'
+
     /**
      * Abstract method.
      *
