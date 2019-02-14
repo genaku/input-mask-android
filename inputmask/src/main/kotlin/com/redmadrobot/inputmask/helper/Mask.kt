@@ -92,7 +92,7 @@ class Mask(format: String, private val customNotations: List<Notation>) {
         }
     }
 
-    private val initialState: State = Compiler(this.customNotations).compile(format)
+    private val initialState: State = Compiler(customNotations).compile(format)
 
     /**
      * Apply mask to the user input string.
@@ -109,7 +109,7 @@ class Mask(format: String, private val customNotations: List<Notation>) {
         var modifiedString = ""
         var modifiedCaretPosition: Int = text.caretPosition
 
-        var state: State = this.initialState
+        var state: State = initialState
         var beforeCaret: Boolean = iterator.beforeCaret()
         var character: Char? = iterator.next()
 
@@ -156,7 +156,7 @@ class Mask(format: String, private val customNotations: List<Notation>) {
                 ),
                 extractedValue,
                 affinity,
-                this.noMandatoryCharactersLeftAfterState(state)
+                noMandatoryCharactersLeftAfterState(state)
         )
     }
 
@@ -165,7 +165,14 @@ class Mask(format: String, private val customNotations: List<Notation>) {
      *
      * @return Placeholder string.
      */
-    fun placeholder(): String = appendPlaceholder(this.initialState, "")
+    fun placeholder(): String = appendPlaceholder(initialState, "")
+
+    /**
+     * Generate placeholder for dynamic view
+     *
+     * @return Placeholder string.
+     */
+    fun placeholder(pos: Int): String = placeholder() // TODO
 
     /**
      * Minimal length of the text inside the field to fill all mandatory characters in the mask.
@@ -200,7 +207,7 @@ class Mask(format: String, private val customNotations: List<Notation>) {
             countStates { state -> (state is FixedState || state is ValueState || state is OptionalValueState) }
 
     private fun countStates(toCount: (State?) -> Boolean): Int {
-        var state: State? = this.initialState
+        var state: State? = initialState
         var length = 0
 
         while (null != state && state !is EOLState) {
@@ -223,29 +230,29 @@ class Mask(format: String, private val customNotations: List<Notation>) {
         }
 
         if (state is FixedState) {
-            return this.appendPlaceholder(state.child, placeholder + state.ownCharacter)
+            return appendPlaceholder(state.child, placeholder + state.ownCharacter)
         }
 
         if (state is FreeState) {
-            return this.appendPlaceholder(state.child, placeholder + state.ownCharacter)
+            return appendPlaceholder(state.child, placeholder + state.ownCharacter)
         }
 
         if (state is OptionalValueState) {
             return when (state.type) {
                 is OptionalValueState.StateType.AlphaNumeric -> {
-                    this.appendPlaceholder(state.child, placeholder + "-")
+                    appendPlaceholder(state.child, placeholder + "-")
                 }
 
                 is OptionalValueState.StateType.Literal -> {
-                    this.appendPlaceholder(state.child, placeholder + "a")
+                    appendPlaceholder(state.child, placeholder + "a")
                 }
 
                 is OptionalValueState.StateType.Numeric -> {
-                    this.appendPlaceholder(state.child, placeholder + "0")
+                    appendPlaceholder(state.child, placeholder + "0")
                 }
 
                 is OptionalValueState.StateType.Custom -> {
-                    this.appendPlaceholder(state.child, placeholder + state.type.character)
+                    appendPlaceholder(state.child, placeholder + state.type.character)
                 }
             }
         }
@@ -253,21 +260,21 @@ class Mask(format: String, private val customNotations: List<Notation>) {
         if (state is ValueState) {
             return when (state.type) {
                 is ValueState.StateType.AlphaNumeric -> {
-                    this.appendPlaceholder(state.child, placeholder + "-")
+                    appendPlaceholder(state.child, placeholder + "-")
                 }
 
                 is ValueState.StateType.Literal -> {
-                    this.appendPlaceholder(state.child, placeholder + "a")
+                    appendPlaceholder(state.child, placeholder + "a")
                 }
 
                 is ValueState.StateType.Numeric -> {
-                    this.appendPlaceholder(state.child, placeholder + "0")
+                    appendPlaceholder(state.child, placeholder + "0")
                 }
 
                 is ValueState.StateType.Ellipsis -> placeholder
 
                 is ValueState.StateType.Custom -> {
-                    this.appendPlaceholder(state.child, placeholder + state.type.character)
+                    appendPlaceholder(state.child, placeholder + state.type.character)
                 }
             }
         }
@@ -279,6 +286,6 @@ class Mask(format: String, private val customNotations: List<Notation>) {
         is EOLState -> true
         is ValueState -> state.isElliptical
         is FixedState -> false
-        else -> this.noMandatoryCharactersLeftAfterState(state.nextState())
+        else -> noMandatoryCharactersLeftAfterState(state.nextState())
     }
 }

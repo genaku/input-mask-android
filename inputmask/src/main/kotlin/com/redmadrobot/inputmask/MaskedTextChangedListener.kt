@@ -9,6 +9,7 @@ import android.util.Log
 import android.view.View
 import android.widget.EditText
 import com.redmadrobot.inputmask.helper.AffinityCalculationStrategy
+import com.redmadrobot.inputmask.helper.CursorData
 import com.redmadrobot.inputmask.helper.Mask
 import com.redmadrobot.inputmask.helper.TextPresentationStrategy
 import com.redmadrobot.inputmask.model.CaretString
@@ -169,9 +170,9 @@ open class MaskedTextChangedListener(
 
     override fun afterTextChanged(edit: Editable?) {
         Log.d("afterTextChanged", "object: $this")
-        this.field.get()?.apply {
+        field.get()?.apply {
             removeTextChangedListener(this@MaskedTextChangedListener)
-            val newText = if (showPlaceholder) getColoredText(afterText) else afterText
+            val newText = textPresentationStrategy.getTextToShow(afterText, ::colorText)
             Log.d("afterTextChanged", "aftertext: $afterText {$caretPosition}")
             setText(newText)
             if (showPlaceholder && caretPosition > newText.length) {
@@ -180,28 +181,20 @@ open class MaskedTextChangedListener(
             setSelection(caretPosition)
             addTextChangedListener(this@MaskedTextChangedListener)
         }
-        this.listener?.afterTextChanged(edit)
+        listener?.afterTextChanged(edit)
     }
 
-    private fun getColoredText(text: String): CharSequence {
-        val fullText = if (text.length >= placeholder().length) {
-            text
-        } else {
-            text + placeholder().substring(Math.min(text.length, placeholder().length - 1))
-        }
-
-        Log.d("getColoredText", "text: [$text] [$fullText] place [${placeholder()}]")
-        return SpannableString(fullText).apply {
-            val color = field.get()?.currentHintTextColor
-            if (color != null) {
-                setSpan(ForegroundColorSpan(color),
-                        text.length,
-                        fullText.length,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
+    private fun colorText(fullText: String, start: Int): CharSequence =
+            SpannableString(fullText).apply {
+                val color = field.get()?.currentHintTextColor
+                if (color != null) {
+                    setSpan(ForegroundColorSpan(color),
+                            start,
+                            fullText.length,
+                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                }
             }
-        }
-    }
 
     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
         listener?.beforeTextChanged(s, start, count, after)
@@ -209,44 +202,32 @@ open class MaskedTextChangedListener(
 
     override fun onTextChanged(text: CharSequence, cursorPosition: Int, before: Int, count: Int) {
         Log.d("onTextChanged", "input [$text] cursorPos: $cursorPosition before: $before count $count")
-        textPresentationStrategy.updateStoredText(text, cursorPosition, before, count)
-        val isDeletion: Boolean = before > 0 && count == 0
-        val needAutocomplete = autocomplete && !isDeletion
-        val caretPosition = textPresentationStrategy.getCaretPosition(cursorPosition, before, count, caretPosition)
-        val result = pickMask(
-                text = textPresentationStrategy.getText(),
-                caretPosition = caretPosition,
-                autocomplete = needAutocomplete
-        ).apply(
-                text = CaretString(textPresentationStrategy.getText(), caretPosition),
-                autocomplete = needAutocomplete
-        )
+        val cursorData = CursorData(cursorPosition, before, count, caretPosition, autocomplete)
+        val result = textPresentationStrategy.getMaskResult(text, cursorData, ::pickMask)
         afterText = result.formattedText.string
         Log.d("onTextChanged", "[${textPresentationStrategy.getText()}] caret: $caretPosition afterText [$afterText]")
-        textPresentationStrategy.updateMaskedText(afterText)
-        this.caretPosition = if (isDeletion) cursorPosition else result.formattedText.caretPosition
+        val isDeletion: Boolean = textPresentationStrategy.isDeletion(before, count)
+        caretPosition = if (isDeletion) cursorPosition else result.formattedText.caretPosition
         valueListener?.onTextChanged(result.complete, result.extractedValue, afterText)
     }
 
     override fun onFocusChange(view: View?, hasFocus: Boolean) {
-        if (autocomplete && hasFocus) {
-            val text: String = if (field.get()?.text!!.isEmpty()) {
-                ""
-            } else {
-                field.get()?.text.toString()
+        field.get()?.apply {
+            if (autocomplete && hasFocus) {
+                val fieldText: String = textPresentationStrategy.getText()
+
+                val result = pickMask(fieldText, fieldText.length, autocomplete).apply(
+                        CaretString(fieldText, fieldText.length),
+                        autocomplete
+                )
+
+                afterText = result.formattedText.string
+                caretPosition = result.formattedText.caretPosition
+                Log.d("onFocusChange", "focus change: [$afterText] cur=$caretPosition")
+                setText(afterText)
+                setSelection(caretPosition)
+                valueListener?.onTextChanged(result.complete, result.extractedValue, afterText)
             }
-
-            val result = pickMask(text, text.length, autocomplete).apply(
-                    CaretString(text, text.length),
-                    autocomplete
-            )
-
-            afterText = result.formattedText.string
-            caretPosition = result.formattedText.caretPosition
-            Log.d("onFocusChange", "focus change: [$afterText] cur=$caretPosition")
-            field.get()?.setText(afterText)
-            field.get()?.setSelection(result.formattedText.caretPosition)
-            valueListener?.onTextChanged(result.complete, result.extractedValue, afterText)
         }
     }
 
