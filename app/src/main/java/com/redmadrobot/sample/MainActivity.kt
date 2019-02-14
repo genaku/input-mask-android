@@ -6,7 +6,7 @@ import android.util.Log
 import android.widget.CheckBox
 import android.widget.EditText
 import com.redmadrobot.inputmask.MaskedTextChangedListener
-import com.redmadrobot.inputmask.helper.AffinityCalculationStrategy
+import com.redmadrobot.inputmask.helper.TextPresentationStrategy
 import java.util.*
 
 /**
@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-//        setupPrefixSample()
+        setupPrefixSample()
         setupSuffixSample()
     }
 
@@ -32,9 +32,9 @@ class MainActivity : AppCompatActivity() {
 
         val listener = MaskedTextChangedListener.installOn(
                 editText,
-                "+7 ([000]) [000]-[00]-[00]",
-                affineFormats,
-                AffinityCalculationStrategy.PREFIX,
+                "ЛСИ[0999999999];[00].[00]",
+//                affineFormats,
+//                AffinityCalculationStrategy.PREFIX,
                 object : MaskedTextChangedListener.ValueListener {
                     override fun onTextChanged(maskFilled: Boolean, extractedValue: String, formattedValue: String) {
 //                        logValueListener(maskFilled, extractedValue, formattedValue)
@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
         )
+        listener.textPresentationStrategy = TextPresentationStrategy.SHOW_PLACEHOLDER
 
         editText.hint = listener.placeholder()
     }
@@ -54,7 +55,7 @@ class MainActivity : AppCompatActivity() {
 
         val listener = MaskedTextChangedListener.installOn(
                 editText,
-                "{ЛСИ}[0000];[00].[00]",
+                "ЛСИ[0999999999];[00].[00]",
                 object : MaskedTextChangedListener.ValueListener {
                     override fun onTextChanged(maskFilled: Boolean, extractedValue: String, formattedText: String) {
 //                        logValueListener(maskFilled, extractedValue, formattedText)

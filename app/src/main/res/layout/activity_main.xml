@@ -15,9 +15,9 @@
     <EditText
         android:id="@+id/prefix_edit_text"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:digits="1234567890+-() "
-        android:inputType="number" />
+        android:layout_height="wrap_content"/>
+        <!--android:digits="1234567890+-() "-->
+        <!--android:inputType="number" />-->
 
     <CheckBox
         android:id="@+id/prefix_check_box"
@@ -35,8 +35,8 @@
     <EditText
         android:id="@+id/suffix_edit_text"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="phone" />
+        android:layout_height="wrap_content"/>
+        <!--android:inputType="phone" />-->
 
     <CheckBox
         android:id="@+id/suffix_check_box"

@@ -10,6 +10,7 @@ import android.view.View
 import android.widget.EditText
 import com.redmadrobot.inputmask.helper.AffinityCalculationStrategy
 import com.redmadrobot.inputmask.helper.Mask
+import com.redmadrobot.inputmask.helper.TextPresentationStrategy
 import com.redmadrobot.inputmask.model.CaretString
 import com.redmadrobot.inputmask.model.Notation
 import java.lang.ref.WeakReference
@@ -30,7 +31,8 @@ open class MaskedTextChangedListener(
         var autocomplete: Boolean = true,
         field: EditText,
         var listener: TextWatcher? = null,
-        var valueListener: ValueListener? = null
+        var valueListener: ValueListener? = null,
+        var textPresentationStrategy: TextPresentationStrategy = TextPresentationStrategy.NO_PLACEHOLDER
 ) : TextWatcher, View.OnFocusChangeListener {
 
     interface ValueListener {
@@ -44,8 +46,6 @@ open class MaskedTextChangedListener(
     private var caretPosition: Int = 0
 
     private val field: WeakReference<EditText> = WeakReference(field)
-
-    var showPlaceholder = false
 
     /**
      * Convenience constructor.
@@ -123,6 +123,7 @@ open class MaskedTextChangedListener(
                 CaretString(text, text.length),
                 autocomplete
         )
+        textPresentationStrategy.setText(result.formattedText.string)
         field.setText(result.formattedText.string)
         field.setSelection(result.formattedText.caretPosition)
         return result
@@ -163,16 +164,23 @@ open class MaskedTextChangedListener(
      */
     fun totalValueLength(): Int = primaryMask.totalValueLength()
 
+    val showPlaceholder: Boolean
+        get() = textPresentationStrategy == TextPresentationStrategy.SHOW_PLACEHOLDER
+
     override fun afterTextChanged(edit: Editable?) {
-        field.get()?.removeTextChangedListener(this)
-        val newText = if (showPlaceholder) getColoredText(afterText) else afterText
-        edit?.replace(0, edit.length, newText)
-        if (showPlaceholder && caretPosition > newText.length) {
-            caretPosition = newText.length
+        Log.d("afterTextChanged", "object: $this")
+        this.field.get()?.apply {
+            removeTextChangedListener(this@MaskedTextChangedListener)
+            val newText = if (showPlaceholder) getColoredText(afterText) else afterText
+            Log.d("afterTextChanged", "aftertext: $afterText {$caretPosition}")
+            setText(newText)
+            if (showPlaceholder && caretPosition > newText.length) {
+                caretPosition = newText.length
+            }
+            setSelection(caretPosition)
+            addTextChangedListener(this@MaskedTextChangedListener)
         }
-        field.get()?.setSelection(caretPosition)
-        field.get()?.addTextChangedListener(this)
-        listener?.afterTextChanged(edit)
+        this.listener?.afterTextChanged(edit)
     }
 
     private fun getColoredText(text: String): CharSequence {
@@ -182,7 +190,7 @@ open class MaskedTextChangedListener(
             text + placeholder().substring(Math.min(text.length, placeholder().length - 1))
         }
 
-        Log.d("TAG", "text: [$text] [$fullText] place [${placeholder()}]")
+        Log.d("getColoredText", "text: [$text] [$fullText] place [${placeholder()}]")
         return SpannableString(fullText).apply {
             val color = field.get()?.currentHintTextColor
             if (color != null) {
@@ -199,44 +207,24 @@ open class MaskedTextChangedListener(
         listener?.beforeTextChanged(s, start, count, after)
     }
 
-    private var lastPos = 0;
-
     override fun onTextChanged(text: CharSequence, cursorPosition: Int, before: Int, count: Int) {
+        Log.d("onTextChanged", "input [$text] cursorPos: $cursorPosition before: $before count $count")
+        textPresentationStrategy.updateStoredText(text, cursorPosition, before, count)
         val isDeletion: Boolean = before > 0 && count == 0
-
-        val changeStart = cursorPosition - if (isDeletion) 0 else before
-        val changeEnd = changeStart + count
-
-        val oldEnd = lastPos
-
-        Log.d("TAG", "cur: $cursorPosition oldEnd: $oldEnd change [$changeStart-$changeEnd] text: [$text]")
-
-        val correctPos = if (cursorPosition > caretPosition) caretPosition else cursorPosition
-
-        var textToProcess = text.toString()
-        if (showPlaceholder) {
-            textToProcess = if (changeStart > caretPosition) {
-                text.substring(0, oldEnd) + text.substring(changeStart, changeEnd)
-            } else {
-                text.substring(0, changeEnd)
-            }
-        }
-
-        val newCaretPosition = if (showPlaceholder) {
-            if (isDeletion) correctPos else correctPos + count
-        } else {
-            if (isDeletion) cursorPosition else cursorPosition + count
-        }
-
-        val result: Mask.Result =
-                pickMask(textToProcess, newCaretPosition, autocomplete && !isDeletion).apply(
-                        CaretString(textToProcess, newCaretPosition),
-                        autocomplete && !isDeletion
-                )
+        val needAutocomplete = autocomplete && !isDeletion
+        val caretPosition = textPresentationStrategy.getCaretPosition(cursorPosition, before, count, caretPosition)
+        val result = pickMask(
+                text = textPresentationStrategy.getText(),
+                caretPosition = caretPosition,
+                autocomplete = needAutocomplete
+        ).apply(
+                text = CaretString(textPresentationStrategy.getText(), caretPosition),
+                autocomplete = needAutocomplete
+        )
         afterText = result.formattedText.string
-        caretPosition = if (isDeletion) cursorPosition else result.formattedText.caretPosition
-        lastPos = caretPosition
-        Log.d("TAG", "cur: $cursorPosition before: $before count: $count textToProcess: [$textToProcess] afterText: [$afterText] newCur: $caretPosition")
+        Log.d("onTextChanged", "[${textPresentationStrategy.getText()}] caret: $caretPosition afterText [$afterText]")
+        textPresentationStrategy.updateMaskedText(afterText)
+        this.caretPosition = if (isDeletion) cursorPosition else result.formattedText.caretPosition
         valueListener?.onTextChanged(result.complete, result.extractedValue, afterText)
     }
 
@@ -248,15 +236,14 @@ open class MaskedTextChangedListener(
                 field.get()?.text.toString()
             }
 
-            val result: Mask.Result =
-                    pickMask(text, text.length, autocomplete).apply(
-                            CaretString(text, text.length),
-                            autocomplete
-                    )
+            val result = pickMask(text, text.length, autocomplete).apply(
+                    CaretString(text, text.length),
+                    autocomplete
+            )
 
             afterText = result.formattedText.string
             caretPosition = result.formattedText.caretPosition
-            Log.d("TAG", "focus change: [$afterText] cur=$caretPosition")
+            Log.d("onFocusChange", "focus change: [$afterText] cur=$caretPosition")
             field.get()?.setText(afterText)
             field.get()?.setSelection(result.formattedText.caretPosition)
             valueListener?.onTextChanged(result.complete, result.extractedValue, afterText)
@@ -311,6 +298,7 @@ open class MaskedTextChangedListener(
             CaretString(text, caretPosition),
             autocomplete
     )
+
 
     companion object {
         /**

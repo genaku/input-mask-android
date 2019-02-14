@@ -21,16 +21,13 @@ enum class AffinityCalculationStrategy {
     PREFIX;
 
     fun calculateAffinityOfMask(mask: Mask, text: CaretString, autocomplete: Boolean): Int {
+        val maskResult = mask.apply(
+                CaretString(text.string, text.caretPosition),
+                autocomplete
+        )
         return when (this) {
-            WHOLE_STRING -> mask.apply(
-                CaretString(text.string, text.caretPosition),
-                autocomplete
-            ).affinity
-
-            PREFIX -> mask.apply(
-                CaretString(text.string, text.caretPosition),
-                autocomplete
-            ).formattedText.string.prefixIntersection(text.string).length
+            WHOLE_STRING -> maskResult.affinity
+            PREFIX -> maskResult.formattedText.string.prefixIntersection(text.string).length
         }
     }
 
