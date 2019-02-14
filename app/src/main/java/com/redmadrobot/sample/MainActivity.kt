@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        setupPrefixSample()
+//        setupPrefixSample()
         setupSuffixSample()
     }
 
@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
                 AffinityCalculationStrategy.PREFIX,
                 object : MaskedTextChangedListener.ValueListener {
                     override fun onTextChanged(maskFilled: Boolean, extractedValue: String, formattedValue: String) {
-                        logValueListener(maskFilled, extractedValue, formattedValue)
+//                        logValueListener(maskFilled, extractedValue, formattedValue)
                         checkBox.isChecked = maskFilled
                     }
                 }
@@ -50,16 +50,14 @@ class MainActivity : AppCompatActivity() {
         val editText = findViewById<EditText>(R.id.suffix_edit_text)
         val checkBox = findViewById<CheckBox>(R.id.suffix_check_box)
         val affineFormats = ArrayList<String>()
-        affineFormats.add("+7 ([000]) [000]-[00]-[00]#[000]")
+//        affineFormats.add("+7 ([000]) [000]-[00]-[00]#[000]")
 
         val listener = MaskedTextChangedListener.installOn(
                 editText,
-                "+7 ([000]) [000]-[00]-[00]",
-                affineFormats,
-                AffinityCalculationStrategy.WHOLE_STRING,
+                "{ЛСИ}[0000];[00].[00]",
                 object : MaskedTextChangedListener.ValueListener {
                     override fun onTextChanged(maskFilled: Boolean, extractedValue: String, formattedText: String) {
-                        logValueListener(maskFilled, extractedValue, formattedText)
+//                        logValueListener(maskFilled, extractedValue, formattedText)
                         checkBox.isChecked = maskFilled
                     }
                 }

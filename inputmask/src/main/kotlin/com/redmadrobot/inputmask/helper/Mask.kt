@@ -165,7 +165,7 @@ class Mask(format: String, private val customNotations: List<Notation>) {
      *
      * @return Placeholder string.
      */
-    fun placeholder(): String = this.appendPlaceholder(this.initialState, "")
+    fun placeholder(): String = appendPlaceholder(this.initialState, "")
 
     /**
      * Minimal length of the text inside the field to fill all mandatory characters in the mask.
