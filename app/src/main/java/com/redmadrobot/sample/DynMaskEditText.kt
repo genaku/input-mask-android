@@ -18,14 +18,6 @@ class DynMaskEditText(context: Context, attrs: AttributeSet) : AppCompatEditText
         maskListener?.onFocusChange(v, hasFocus)
     }
 
-    fun clear() {
-        if (maskListener == null) {
-            setText("")
-        } else {
-            maskListener?.setText("")
-        }
-    }
-
     fun setValue(text: CharSequence) {
         if (maskListener == null) {
             setText(text)
