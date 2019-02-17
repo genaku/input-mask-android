@@ -1,6 +1,5 @@
 package com.redmadrobot.inputmask.helper
 
-import android.util.Log
 import com.redmadrobot.inputmask.model.CaretString
 
 /**
@@ -32,11 +31,12 @@ enum class TextPresentationStrategy {
             }
 
     private fun addPlaceholderAndColor(text: String, autocomplete: Boolean, colorText: (String, Int) -> CharSequence): CharSequence {
+//        Log.d("getColoredText", "storedText: [$storedText]")
         val caretString = CaretString(storedText, storedText.length)
         val placeholder = mask?.placeholder(caretString, autocomplete) ?: ""
         val fullText = text + placeholder
 
-        Log.d("getColoredText", "text: [$text] [$fullText] place [$placeholder]")
+//        Log.d("getColoredText", "text: [$text] [$fullText] place [$placeholder]")
         return colorText(fullText, text.length)
     }
 

@@ -528,6 +528,25 @@ class PhoneTest : MaskTest() {
     }
 
     @Test
+    fun applyAutocomplete_And_NotAutocompleteEmpty_empty_return_empty() {
+        val inputString = ""
+        val inputCaret: Int = inputString.length
+
+        val expectedString = ""
+        val expectedCaret: Int = expectedString.length
+        val expectedValue = ""
+
+        val mask = Mask(format(), emptyList(), false)
+        val result: Mask.Result = mask.apply(CaretString(inputString, inputCaret), true)
+
+        Assert.assertEquals(expectedString, result.formattedText.string)
+        Assert.assertEquals(expectedCaret, result.formattedText.caretPosition)
+        Assert.assertEquals(expectedValue, result.extractedValue)
+
+        Assert.assertEquals(false, result.complete)
+    }
+
+    @Test
     fun applyAutocomplete_plus_return_plus7spaceBrace() {
         val inputString = "+"
         val inputCaret: Int = inputString.length

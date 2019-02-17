@@ -33,7 +33,8 @@ open class MaskedTextChangedListener(
         field: EditText,
         var listener: TextWatcher? = null,
         var valueListener: ValueListener? = null,
-        var textPresentationStrategy: TextPresentationStrategy = TextPresentationStrategy.NO_PLACEHOLDER
+        var textPresentationStrategy: TextPresentationStrategy = TextPresentationStrategy.NO_PLACEHOLDER,
+        val autocompleteEmpty: Boolean = true
 ) : TextWatcher, View.OnFocusChangeListener {
 
     interface ValueListener {
@@ -41,12 +42,14 @@ open class MaskedTextChangedListener(
     }
 
     private val primaryMask: Mask
-        get() = Mask.getOrCreate(primaryFormat, customNotations)
+        get() = Mask.getOrCreate(primaryFormat, customNotations, autocompleteEmpty)
 
     private var afterText: String = ""
     private var caretPosition: Int = 0
 
     private val field: WeakReference<EditText> = WeakReference(field)
+
+    private var curResult: Mask.Result? = null
 
     /**
      * Convenience constructor.
@@ -102,12 +105,30 @@ open class MaskedTextChangedListener(
     constructor(primaryFormat: String, affineFormats: List<String>, affinityCalculationStrategy: AffinityCalculationStrategy, autocomplete: Boolean, field: EditText, listener: TextWatcher?, valueListener: ValueListener?) :
             this(primaryFormat, affineFormats, emptyList(), affinityCalculationStrategy, autocomplete, field, listener, valueListener)
 
+    val complete: Boolean
+        get() = curResult?.complete ?: false
+
+    val extractedValue: String
+        get() = curResult?.extractedValue ?: ""
+
+    private var hideWhenEmpty = false
+
+    fun setHideWhenEmpty(value: Boolean) {
+        this.hideWhenEmpty = value
+        if (!value && afterText.isEmpty()) {
+            setText("")
+        } else {
+            refreshField()
+        }
+    }
+
     /**
      * Set text and apply formatting.
      * @param text - text; might be plain, might already have some formatting.
      */
     open fun setText(text: String): Mask.Result? = field.get()?.let {
         val result = setText(text, it)
+        curResult = result
         afterText = result.formattedText.string
         caretPosition = result.formattedText.caretPosition
         valueListener?.onTextChanged(result.complete, result.extractedValue, afterText)
@@ -124,6 +145,7 @@ open class MaskedTextChangedListener(
                 CaretString(text, text.length),
                 autocomplete
         )
+        curResult = result
         textPresentationStrategy.setText(result.formattedText.string)
         field.setText(result.formattedText.string)
         field.setSelection(result.formattedText.caretPosition)
@@ -136,6 +158,10 @@ open class MaskedTextChangedListener(
      * @return Placeholder string.
      */
     fun placeholder(): String = primaryMask.placeholder()
+
+    fun getText(): String {
+        return afterText
+    }
 
     /**
      * Minimal length of the text inside the field to fill all mandatory characters in the mask.
@@ -170,9 +196,14 @@ open class MaskedTextChangedListener(
 
     override fun afterTextChanged(edit: Editable?) {
         Log.d("afterTextChanged", "object: $this")
+        refreshField()
+        listener?.afterTextChanged(edit)
+    }
+
+    private fun refreshField() {
         field.get()?.apply {
             removeTextChangedListener(this@MaskedTextChangedListener)
-            val newText = textPresentationStrategy.getTextToShow(afterText, autocomplete, ::colorText)
+            val newText = if (hideWhenEmpty && afterText.isEmpty()) "" else textPresentationStrategy.getTextToShow(afterText, autocomplete, ::colorText)
             Log.d("afterTextChanged", "aftertext: $afterText {$caretPosition}")
             setText(newText)
             if (showPlaceholder && caretPosition > newText.length) {
@@ -181,7 +212,6 @@ open class MaskedTextChangedListener(
             setSelection(caretPosition)
             addTextChangedListener(this@MaskedTextChangedListener)
         }
-        listener?.afterTextChanged(edit)
     }
 
     private fun colorText(fullText: String, start: Int): CharSequence =
@@ -204,6 +234,7 @@ open class MaskedTextChangedListener(
         Log.d("onTextChanged", "input [$text] cursorPos: $cursorPosition before: $before count $count")
         val cursorData = CursorData(cursorPosition, before, count, caretPosition, autocomplete)
         val result = textPresentationStrategy.getMaskResult(text, cursorData, ::pickMask)
+        curResult = result
         afterText = result.formattedText.string
         Log.d("onTextChanged", "[${textPresentationStrategy.getText()}] caret: $caretPosition afterText [$afterText]")
         val isDeletion: Boolean = textPresentationStrategy.isDeletion(before, count)
@@ -216,10 +247,12 @@ open class MaskedTextChangedListener(
             if (autocomplete && hasFocus) {
                 val fieldText: String = textPresentationStrategy.getText()
 
+                Log.d("onFocusChange", "focus change input: [$fieldText]")
                 val result = pickMask(fieldText, fieldText.length, autocomplete).apply(
                         CaretString(fieldText, fieldText.length),
                         autocomplete
                 )
+                curResult = result
 
                 afterText = result.formattedText.string
                 caretPosition = result.formattedText.caretPosition
@@ -244,7 +277,7 @@ open class MaskedTextChangedListener(
 
         val masksAndAffinities: MutableList<MaskAffinity> = ArrayList()
         for (format in affineFormats) {
-            val mask: Mask = Mask.getOrCreate(format, customNotations)
+            val mask: Mask = Mask.getOrCreate(format, customNotations, autocompleteEmpty)
             val affinity: Int = calculateAffinity(mask, text, caretPosition, autocomplete)
             masksAndAffinities.add(MaskAffinity(mask, affinity))
         }

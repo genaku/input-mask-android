@@ -20,12 +20,12 @@ import java.util.*
  *
  * @author taflanidi
  */
-class Mask(format: String, customNotations: List<Notation>) {
+class Mask(format: String, customNotations: List<Notation>, private val autocompleteEmpty: Boolean = true) {
 
     /**
      * Convenience constructor.
      */
-    constructor(format: String) : this(format, emptyList())
+    constructor(format: String, autocompleteEmpty: Boolean = true) : this(format, emptyList(), autocompleteEmpty)
 
     /**
      * ### Result
@@ -64,10 +64,10 @@ class Mask(format: String, customNotations: List<Notation>) {
          * @returns Previously cached ```Mask``` object for requested format string. If such it
          * doesn't exist in cache, the object is constructed, cached and returned.
          */
-        fun getOrCreate(format: String, customNotations: List<Notation>): Mask {
+        fun getOrCreate(format: String, customNotations: List<Notation>, autocompleteEmpty: Boolean = true): Mask {
             var cachedMask: Mask? = cache[format]
             if (null == cachedMask) {
-                cachedMask = Mask(format, customNotations)
+                cachedMask = Mask(format, customNotations, autocompleteEmpty)
                 cache[format] = cachedMask
             }
             return cachedMask
@@ -139,13 +139,15 @@ class Mask(format: String, customNotations: List<Notation>) {
             }
         }
 
-        while (autocomplete && beforeCaret) {
-            val next: Next = state.autocomplete() ?: break
-            state = next.state
-            modifiedString += next.insert ?: ""
-            extractedValue += next.value ?: ""
-            if (null != next.insert) {
-                modifiedCaretPosition += 1
+        if (autocompleteEmpty || modifiedString.isNotEmpty()) {
+            while (autocomplete && beforeCaret) {
+                val next: Next = state.autocomplete() ?: break
+                state = next.state
+                modifiedString += next.insert ?: ""
+                extractedValue += next.value ?: ""
+                if (null != next.insert) {
+                    modifiedCaretPosition += 1
+                }
             }
         }
 
@@ -181,9 +183,11 @@ class Mask(format: String, customNotations: List<Notation>) {
             }
         }
 
-        while (autocomplete && beforeCaret) {
-            val next: Next = state.autocomplete() ?: break
-            state = next.state
+        if (autocompleteEmpty || state != initialState) {
+            while (autocomplete && beforeCaret) {
+                val next: Next = state.autocomplete() ?: break
+                state = next.state
+            }
         }
         return state
     }
@@ -202,7 +206,7 @@ class Mask(format: String, customNotations: List<Notation>) {
      * @return Placeholder string.
      */
     fun placeholder(text: CaretString, autocomplete: Boolean): String =
-            appendPlaceholderFrom(getEndState(text, autocomplete), "")
+            appendPlaceholderFrom(getEndState(text, autocomplete), "", false)
 
     /**
      * Minimal length of the text inside the field to fill all mandatory characters in the mask.
@@ -236,12 +240,12 @@ class Mask(format: String, customNotations: List<Notation>) {
     fun totalValueLength() =
             countStates { state -> (state is FixedState || state is ValueState || state is OptionalValueState) }
 
-    private fun countStates(toCount: (State?) -> Boolean): Int {
+    private fun countStates(needCount: (State?) -> Boolean): Int {
         var state: State? = initialState
         var length = 0
 
         while (null != state && state !is EOLState) {
-            if (toCount(state)) {
+            if (needCount(state)) {
                 length++
             }
             state = state.child
@@ -250,33 +254,20 @@ class Mask(format: String, customNotations: List<Notation>) {
         return length
     }
 
-    private fun appendPlaceholderFrom(state: State?, placeholder: String): String {
-        state?: return placeholder
+    private fun appendPlaceholderFrom(state: State?, placeholder: String, skipOptional: Boolean): String {
+        state ?: return placeholder
 
-        val pos = 0
         return when (state) {
-            is FixedState -> appendPlaceholderFrom(state.child, appendCharIfPosIsZero(pos, placeholder, state.ownCharacter))
-            is FreeState -> appendPlaceholderFrom(state.child, appendCharIfPosIsZero(pos, placeholder, state.ownCharacter))
-            is OptionalValueState -> {
-                val viewChar = if (state.type is OptionalValueState.StateType.Custom) state.type.character else state.viewChar
-                if (pos == 0) appendCharIfPosIsZero(pos, placeholder, viewChar) else appendPlaceholderFrom(state.child, appendCharIfPosIsZero(pos, placeholder, viewChar))
-            }
-            is ValueState -> {
-                val viewChar = if (state.type is ValueState.StateType.Custom) state.type.character else state.viewChar
-                appendPlaceholderFrom(state.child, appendCharIfPosIsZero(pos, placeholder, viewChar))
-            }
+            is FixedState -> appendPlaceholderFrom(state.child, placeholder + state.ownCharacter, false)
+            is FreeState -> appendPlaceholderFrom(state.child, placeholder + state.ownCharacter, false)
+            is OptionalValueState -> appendPlaceholderFrom(state.child, placeholder + if (skipOptional) "" else state.viewChar, true)
+            is ValueState -> appendPlaceholderFrom(state.child, placeholder + state.viewChar, false)
             else -> placeholder
         }
     }
 
-    private fun appendCharIfPosIsZero(startPos: Int, placeholder: String, char: Char): String {
-        return if (startPos == 0) placeholder + char else placeholder
-    }
-
     private fun appendPlaceholder(state: State?, placeholder: String): String {
-        if (null == state) {
-            return placeholder
-        }
+        state ?: return placeholder
 
         if (state is EOLState) {
             return placeholder

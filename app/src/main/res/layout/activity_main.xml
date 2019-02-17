@@ -45,4 +45,41 @@
         android:layout_gravity="end"
         android:clickable="false" />
 
+    <com.redmadrobot.sample.DynMaskEditText
+        android:id="@+id/edtMask"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <CheckBox
+        android:id="@+id/mask_check_box"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:clickable="false" />
+
+    <CheckBox
+        android:id="@+id/hide_check_box"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:clickable="false" />
+
+    <Button
+        android:id="@+id/btnMask"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Mask" />
+
+    <Button
+        android:id="@+id/btnClear"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Clear" />
+
+    <Button
+        android:id="@+id/btnHide"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Hide" />
+
 </LinearLayout>

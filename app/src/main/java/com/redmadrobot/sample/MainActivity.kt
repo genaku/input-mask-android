@@ -7,6 +7,7 @@ import android.widget.CheckBox
 import android.widget.EditText
 import com.redmadrobot.inputmask.MaskedTextChangedListener
 import com.redmadrobot.inputmask.helper.TextPresentationStrategy
+import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
 
 /**
@@ -16,12 +17,16 @@ import java.util.*
  */
 class MainActivity : AppCompatActivity() {
 
+    private var masked = true
+    private var hideWhenEmpty = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        setupPrefixSample()
-        setupSuffixSample()
+        setupButtons()
+//        setupPrefixSample()
+//        setupSuffixSample()
     }
 
     private fun setupPrefixSample() {
@@ -72,6 +77,31 @@ class MainActivity : AppCompatActivity() {
         Log.d(className, extractedValue)
         Log.d(className, maskFilled.toString())
         Log.d(className, formattedText)
+    }
+
+    private fun setupButtons() {
+        switchMasked()
+        btnMask.setOnClickListener {
+            switchMasked()
+        }
+        btnClear.setOnClickListener {
+            edtMask.clear()
+        }
+        btnHide.setOnClickListener {
+            hideWhenEmpty = !hideWhenEmpty
+            edtMask.setHideWhenEmpty(hideWhenEmpty)
+            hide_check_box.isChecked = hideWhenEmpty
+        }
+    }
+
+    private fun switchMasked() {
+        masked = !masked
+        if (masked) {
+            edtMask.setMask("ЛСИ[0999999999];[00].[00]")
+        } else {
+            edtMask.setMask("")
+        }
+        mask_check_box.isChecked = masked
     }
 
 }

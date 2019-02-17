@@ -34,6 +34,14 @@ class OptionalValueState(child: State, val type: StateType) : State(child) {
         is StateType.Custom -> this.type.characterSet.contains(character)
     }
 
+    override val viewChar: Char
+        get() = when (type) {
+            is StateType.Numeric -> '*'
+            is StateType.Literal -> 'A'
+            is StateType.AlphaNumeric -> '*'
+            is StateType.Custom -> type.character
+        }
+
     override fun accept(character: Char): Next? {
         val acceptsCharacter = accepts(character)
         val acceptedCharacter = if (acceptsCharacter) character else null

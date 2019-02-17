@@ -73,6 +73,15 @@ class ValueState : State {
             else
                 null
 
+    override val viewChar: Char
+        get() = when (type) {
+            is StateType.Numeric -> '*'
+            is StateType.Literal -> 'A'
+            is StateType.AlphaNumeric -> '*'
+            is StateType.Custom -> type.character
+            is StateType.Ellipsis -> '*'
+        }
+
     val isElliptical: Boolean
         get() = type is StateType.Ellipsis
 
