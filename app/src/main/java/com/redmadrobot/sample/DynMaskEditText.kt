@@ -3,6 +3,7 @@ package com.redmadrobot.sample
 import android.content.Context
 import android.support.v7.widget.AppCompatEditText
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import com.redmadrobot.inputmask.MaskedTextChangedListener
 import com.redmadrobot.inputmask.helper.TextPresentationStrategy
@@ -46,6 +47,7 @@ class DynMaskEditText(context: Context, attrs: AttributeSet) : AppCompatEditText
             ).apply {
                 textPresentationStrategy = TextPresentationStrategy.SHOW_PLACEHOLDER
             }
+            Log.d("TAG", "addTextChangedListener $maskListener")
             this.addTextChangedListener(maskListener)
         }
     }
@@ -53,6 +55,7 @@ class DynMaskEditText(context: Context, attrs: AttributeSet) : AppCompatEditText
     private fun removeMaskListener() {
         maskListener ?: return
         this.removeTextChangedListener(maskListener)
+        Log.d("TAG", "removeTextChangedListener $maskListener")
         maskListener = null
     }
 

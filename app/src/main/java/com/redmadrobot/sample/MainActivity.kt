@@ -85,7 +85,7 @@ class MainActivity : AppCompatActivity() {
             switchMasked()
         }
         btnClear.setOnClickListener {
-            edtMask.clear()
+            edtMask.setText("")
         }
         btnHide.setOnClickListener {
             hideWhenEmpty = !hideWhenEmpty
@@ -96,12 +96,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun switchMasked() {
         masked = !masked
-        if (masked) {
-            edtMask.setMask("ЛСИ[0999999999];[00].[00]")
-        } else {
-            edtMask.setMask("")
-        }
+        edtMask.setText("")
+        val mask = if (masked) "ЛСИ[0999999999];[00].[00]" else "ЖКУ[00AA000000]C[00];[00].[0000]"
+        edtMask.setMask(mask)
         mask_check_box.isChecked = masked
+        tvMask.text = mask
     }
 
 }

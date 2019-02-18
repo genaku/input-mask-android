@@ -10,12 +10,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="@string/phone_prefix_sample" />
+        android:text="@string/phone_prefix_sample"
+        android:visibility="gone" />
 
     <EditText
         android:id="@+id/prefix_edit_text"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
         <!--android:digits="1234567890+-() "-->
         <!--android:inputType="number" />-->
 
@@ -24,18 +26,21 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end"
-        android:clickable="false" />
+        android:clickable="false"
+        android:visibility="gone" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="@string/phone_suffix_sample" />
+        android:text="@string/phone_suffix_sample"
+        android:visibility="gone" />
 
     <EditText
         android:id="@+id/suffix_edit_text"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
         <!--android:inputType="phone" />-->
 
     <CheckBox
@@ -43,7 +48,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end"
-        android:clickable="false" />
+        android:clickable="false"
+        android:visibility="gone" />
 
     <com.redmadrobot.sample.DynMaskEditText
         android:id="@+id/edtMask"
@@ -81,5 +87,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Hide" />
+
+    <TextView
+        android:id="@+id/tvMask"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TextView" />
 
 </LinearLayout>
