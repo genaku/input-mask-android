@@ -15,7 +15,12 @@ class DynMaskEditText(context: Context, attrs: AttributeSet) : AppCompatEditText
     val complete: Boolean
         get() = maskListener?.complete ?: true
 
+    init {
+        onFocusChangeListener = this
+    }
+
     override fun onFocusChange(v: View?, hasFocus: Boolean) {
+        Log.d("TAG", "onFocusChange")
         maskListener?.onFocusChange(v, hasFocus)
     }
 
@@ -59,4 +64,7 @@ class DynMaskEditText(context: Context, attrs: AttributeSet) : AppCompatEditText
         maskListener = null
     }
 
+    fun setValueListener(listener: MaskedTextChangedListener.ValueListener) {
+        maskListener?.valueListener = listener
+    }
 }

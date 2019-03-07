@@ -11,13 +11,13 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="@string/phone_prefix_sample"
-        android:visibility="gone" />
+        android:visibility="visible" />
 
     <EditText
         android:id="@+id/prefix_edit_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:visibility="gone" />
+        android:visibility="visible" />
         <!--android:digits="1234567890+-() "-->
         <!--android:inputType="number" />-->
 

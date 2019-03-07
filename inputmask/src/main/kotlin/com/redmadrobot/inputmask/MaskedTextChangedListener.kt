@@ -5,12 +5,10 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
+import android.util.Log
 import android.view.View
 import android.widget.EditText
-import com.redmadrobot.inputmask.helper.AffinityCalculationStrategy
-import com.redmadrobot.inputmask.helper.CursorData
-import com.redmadrobot.inputmask.helper.Mask
-import com.redmadrobot.inputmask.helper.TextPresentationStrategy
+import com.redmadrobot.inputmask.helper.*
 import com.redmadrobot.inputmask.model.CaretString
 import com.redmadrobot.inputmask.model.Notation
 import java.lang.ref.WeakReference
@@ -32,13 +30,24 @@ open class MaskedTextChangedListener(
         field: EditText,
         var listener: TextWatcher? = null,
         var valueListener: ValueListener? = null,
-        var textPresentationStrategy: TextPresentationStrategy = TextPresentationStrategy.NO_PLACEHOLDER,
         val autocompleteEmpty: Boolean = true
 ) : TextWatcher, View.OnFocusChangeListener {
 
     interface ValueListener {
+        fun onFocusChange(view: View?, hasFocus: Boolean)
         fun onTextChanged(maskFilled: Boolean, extractedValue: String, formattedValue: String)
     }
+
+    private var mTextPresentationStrategy: TextPresentationStrategy = TextPresentationStrategy.NO_PLACEHOLDER
+
+    var textPresentationStrategy: TextPresentationStrategy
+        get() = mTextPresentationStrategy
+        set(value) {
+            if (value != mTextPresentationStrategy) {
+                mTextPresentationStrategy = value
+                textPresenter = createTextPresenter(value)
+            }
+        }
 
     private val primaryMask: Mask
         get() = Mask.getOrCreate(primaryFormat, customNotations, autocompleteEmpty)
@@ -49,6 +58,14 @@ open class MaskedTextChangedListener(
     private val field: WeakReference<EditText> = WeakReference(field)
 
     private var curResult: Mask.Result? = null
+
+    private var textPresenter = createTextPresenter(textPresentationStrategy)
+
+    private fun createTextPresenter(textPresentationStrategy: TextPresentationStrategy): TextPresenter =
+            TextPresenter(when (textPresentationStrategy) {
+                TextPresentationStrategy.NO_PLACEHOLDER -> NoPlaceholderTextPresentStrategy()
+                TextPresentationStrategy.SHOW_PLACEHOLDER -> ShowPlaceholderTextPresentStrategy()
+            })
 
     /**
      * Convenience constructor.
@@ -145,7 +162,7 @@ open class MaskedTextChangedListener(
                 autocomplete
         )
         curResult = result
-        textPresentationStrategy.setText(result.formattedText.string)
+        textPresenter.setText(result.formattedText.string)
         field.setText(result.formattedText.string)
         field.setSelection(result.formattedText.caretPosition)
         return result
@@ -202,7 +219,7 @@ open class MaskedTextChangedListener(
     private fun refreshField() {
         field.get()?.apply {
             removeTextChangedListener(this@MaskedTextChangedListener)
-            val newText = if (hideWhenEmpty && afterText.isEmpty()) "" else textPresentationStrategy.getTextToShow(afterText, autocomplete, ::colorText)
+            val newText = if (hideWhenEmpty && afterText.isEmpty()) "" else textPresenter.getTextToShow(afterText, autocomplete, ::colorText)
 //            Log.d("afterTextChanged", "aftertext: $afterText {$caretPosition}")
             setText(newText)
             if (showPlaceholder && caretPosition > newText.length) {
@@ -230,24 +247,26 @@ open class MaskedTextChangedListener(
     }
 
     override fun onTextChanged(text: CharSequence, cursorPosition: Int, before: Int, count: Int) {
-//        Log.d("onTextChanged", "input [$text] cursorPos: $cursorPosition before: $before count $count")
+        Log.d("onTextChanged", "input [$text] cursorPos: $cursorPosition before: $before count $count")
         val cursorData = CursorData(cursorPosition, before, count, caretPosition, autocomplete)
-        val result = textPresentationStrategy.getMaskResult(text, cursorData, ::pickMask)
+        val result = textPresenter.getMaskResult(text, cursorData, ::pickMask)
         curResult = result
         afterText = result.formattedText.string
-//        Log.d("onTextChanged", "[${textPresentationStrategy.getText()}] caret: $caretPosition afterText [$afterText]")
-        val isDeletion: Boolean = textPresentationStrategy.isDeletion(before, count)
+//        Log.d("onTextChanged", "[${textPresenter.getText()}] caret: $caretPosition afterText [$afterText]")
+        val isDeletion: Boolean = textPresenter.isDeletion(before, count)
         caretPosition = if (isDeletion) cursorPosition else result.formattedText.caretPosition
         valueListener?.onTextChanged(result.complete, result.extractedValue, afterText)
     }
 
     override fun onFocusChange(view: View?, hasFocus: Boolean) {
+        Log.d("onFocusChange", "$hasFocus")
         if (view != field) {
+            valueListener?.onFocusChange(view, hasFocus)
             return
         }
         field.get()?.apply {
             if (autocomplete && hasFocus) {
-                val fieldText: String = textPresentationStrategy.getText()
+                val fieldText: String = textPresenter.getText()
 
 //                Log.d("onFocusChange", "focus change input: [$fieldText]")
                 val result = pickMask(fieldText, fieldText.length, autocomplete).apply(
@@ -264,6 +283,7 @@ open class MaskedTextChangedListener(
                 valueListener?.onTextChanged(result.complete, result.extractedValue, afterText)
             }
         }
+        valueListener?.onFocusChange(view, hasFocus)
     }
 
     private fun pickMask(

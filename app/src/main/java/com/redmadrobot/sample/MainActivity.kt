@@ -3,6 +3,7 @@ package com.redmadrobot.sample
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.View
 import android.widget.CheckBox
 import android.widget.EditText
 import com.redmadrobot.inputmask.MaskedTextChangedListener
@@ -41,6 +42,10 @@ class MainActivity : AppCompatActivity() {
 //                affineFormats,
 //                AffinityCalculationStrategy.PREFIX,
                 object : MaskedTextChangedListener.ValueListener {
+                    override fun onFocusChange(view: View?, hasFocus: Boolean) {
+                        Log.d("TAG", "on focus")
+                    }
+
                     override fun onTextChanged(maskFilled: Boolean, extractedValue: String, formattedValue: String) {
 //                        logValueListener(maskFilled, extractedValue, formattedValue)
                         checkBox.isChecked = maskFilled
@@ -62,6 +67,10 @@ class MainActivity : AppCompatActivity() {
                 editText,
                 "ЛСИ[0999999999];[00].[00]",
                 object : MaskedTextChangedListener.ValueListener {
+                    override fun onFocusChange(view: View?, hasFocus: Boolean) {
+                        Log.d("TAG", "on focus")
+                    }
+
                     override fun onTextChanged(maskFilled: Boolean, extractedValue: String, formattedText: String) {
 //                        logValueListener(maskFilled, extractedValue, formattedText)
                         checkBox.isChecked = maskFilled
@@ -99,6 +108,15 @@ class MainActivity : AppCompatActivity() {
         edtMask.setText("")
         val mask = if (masked) "ЛСИ[0999999999];[00].[00]" else "ЖКУ[00AA000000]C[00];[00].[0000]"
         edtMask.setMask(mask)
+        edtMask.setValueListener(object :MaskedTextChangedListener.ValueListener{
+            override fun onFocusChange(view: View?, hasFocus: Boolean) {
+                Log.d("TAG", "on focus edt $hasFocus")
+            }
+
+            override fun onTextChanged(maskFilled: Boolean, extractedValue: String, formattedValue: String) {
+                //
+            }
+        })
         mask_check_box.isChecked = masked
         tvMask.text = mask
     }
